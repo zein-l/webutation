@@ -155,9 +155,24 @@ end to end with `DATABASE_URL` unset and no engine ever constructed. Wiring the
 deployed API to a database is therefore a matter of adding one back, not of
 rebuilding the layer.
 
-The search cache and uploaded photos also live on the container's ephemeral
-disk, so a restart loses both: cached searches must be re-bought, and photos
-disappear ahead of their retention window rather than after it.
+The search cache and uploaded photos live on a 1GB persistent disk mounted at
+`/app/cache`, which is where `CACHE_DIR` resolves to under the image's working
+directory. Everything written at runtime is under it: cached responses, fetched
+images, subject photographs, and the HMAC key that signs their URLs. Before the
+disk, a redeploy threw away a cache that costs live searches to rebuild, minted
+a new signing key that silently invalidated every upload URL already issued,
+and deleted photographs early.
+
+That last one cuts both ways and is worth saying plainly: photographs used to
+vanish whenever the instance restarted, which was accidentally safer than the
+policy promised. On a disk they survive until the retention sweep deletes them,
+so the 24-hour window is now the real one rather than an upper bound nothing
+reached. The sweep runs at startup and every 15 minutes.
+
+A disk also means the service cannot scale past one instance and no longer gets
+zero-downtime deploys. Both were already true: the run guard and the in-flight
+run registry are in-process, so a second instance would double the daily search
+budget and lose half the run lookups.
 
 ## What the numbers mean
 

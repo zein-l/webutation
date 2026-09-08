@@ -17,18 +17,54 @@ services:
   - type: web
     name: webutation-api
     runtime: docker
-    # Formerly "starter": 0.5 CPU, 512MB.
+    # 512MB was too small and this must not go back to it. Loading all five
+    # buffalo_l models took 422MB resident and the instance was killed
+    # mid-search, twice; app/engine/faces.py now loads only the two this system
+    # reads, which is 271MB. That alone was still not enough: a measured run
+    # peaks at 714MB, because face verification decodes every candidate image
+    # on top of the model.
     #
-    # 512MB is tight and was, briefly, too tight: loading all five buffalo_l
-    # models took 422MB resident and the instance was killed mid-search.
-    # app/engine/faces.py now loads only detection and recognition (271MB),
-    # which is the two this system actually reads. If face verification starts
-    # dying again on larger result sets, this is the line to raise — the
-    # symptom is a run that vanishes with "No run with that id", because runs
-    # are held in memory and a restart takes them with it.
-    plan: 0.5c-512mb
+    # 2GB leaves the observed peak at about a third of the ceiling. The symptom
+    # of getting this wrong is a run that vanishes with "No run with that id" —
+    # runs are held in memory, so a kill takes them with it — and /health
+    # reports peak_rss_mb against limit_mb so the cause is visible rather than
+    # inferred.
+    plan: 1c-2g
     dockerfilePath: ./Dockerfile
     healthCheckPath: /health
+
+    # Everything written at runtime lives under one directory, so one mount
+    # covers it: app/cache.py sets CACHE_DIR = Path("cache") relative to the
+    # image's WORKDIR of /app, and app/uploads.py puts UPLOADS_DIR inside it.
+    # That is cached search responses, fetched images, the displaced-response
+    # history, subject photographs, and the HMAC key that signs their URLs.
+    #
+    # Without this the filesystem is ephemeral, and a redeploy threw away a
+    # cache that costs live searches to rebuild. It also regenerated the
+    # signing key, which silently invalidated every upload URL already handed
+    # out, and deleted subject photographs early — accidentally safer than the
+    # retention window promises, but not by design.
+    #
+    # Two consequences, both already true of this service: a disk prevents
+    # scaling to more than one instance, and it disables zero-downtime deploys
+    # because Render stops the old instance before starting the new one. The
+    # run guard and the run registry are in-process, so a second instance would
+    # double the daily budget and lose half the run lookups; one instance is
+    # the design, not a limitation this introduces.
+    #
+    # 1GB is generous: a local cache of 238 fetched images and 32 responses is
+    # about 30MB. Render bills $0.25/GB/month, and the size can be raised
+    # later but never lowered.
+    #
+    # Note the retention sweep matters more now. Photographs used to disappear
+    # whenever the instance restarted; on a disk they survive until the sweeper
+    # deletes them, which app/api.py runs at startup and every 15 minutes. The
+    # 24-hour window is now the real one rather than an upper bound nobody
+    # reached.
+    disk:
+      name: cache
+      mountPath: /app/cache
+      sizeGB: 1
     # The face model is in the image, so a deploy does not download 300MB
     # before it can serve; but loading it still takes a moment on first use.
     envVars:

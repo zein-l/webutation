@@ -44,10 +44,13 @@ COPY scripts ./scripts
 # a search, which matters more on a public deploy than it does locally.
 COPY fixtures ./fixtures
 
-# Uploads and the search cache are written at runtime. Both are ephemeral on
-# Render: a restart loses them, which for a 24-hour photo retention window and
-# a cache that only saves money is acceptable and is stated in the README.
-RUN mkdir -p /app/uploads /app/cache
+# Everything written at runtime lives under /app/cache: responses, fetched
+# images, and uploads (app/uploads.py puts UPLOADS_DIR inside CACHE_DIR). One
+# directory, so one persistent disk mount covers all of it — see render.yaml.
+# There is deliberately no /app/uploads: it existed, nothing used it, and an
+# empty directory with the obvious name is an invitation to mount a disk in
+# the wrong place.
+RUN mkdir -p /app/cache
 
 EXPOSE 8000
 
