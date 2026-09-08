@@ -21,6 +21,7 @@ import time
 from collections.abc import AsyncIterator
 
 from fastapi import Body, FastAPI, File, HTTPException, Query, Request, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 
 from app.cache import IMAGE_USER_AGENT
@@ -81,6 +82,36 @@ app = FastAPI(
     description="Subject photo intake for reverse image search.",
     lifespan=lifespan,
 )
+
+
+def _allowed_origins() -> list[str]:
+    """Origins the browser app is served from.
+
+    Empty in development: Vite proxies the API, so the page and the API share an
+    origin and the browser never sends a preflight. A deployment serves the
+    static site from a different host, which makes every call cross-origin.
+
+    Listed explicitly rather than "*", because these routes accept an upload and
+    a token; a wildcard would let any page on the internet spend this
+    deployment's search budget through a visitor's browser.
+    """
+    import os
+
+    raw = os.environ.get("ALLOWED_ORIGINS", "")
+    return [origin.strip().rstrip("/") for origin in raw.split(",") if origin.strip()]
+
+
+_origins = _allowed_origins()
+if _origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_origins,
+        allow_methods=["GET", "POST"],
+        # X-Run-Token is the guard on the only route that spends money; without
+        # it here the browser's preflight refuses the header and every search
+        # fails with a CORS error rather than a 401.
+        allow_headers=["Content-Type", "X-Run-Token"],
+    )
 
 
 @app.post("/subjects/photo")

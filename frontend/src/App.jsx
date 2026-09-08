@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { apiUrl, runHeaders } from "./api";
 import Candidate from "./components/Candidate.jsx";
 import Gauge from "./components/Gauge.jsx";
 import PhotoDrop from "./components/PhotoDrop.jsx";
@@ -24,7 +25,7 @@ export default function App() {
   useEffect(() => () => clearTimeout(timer.current), []);
 
   const poll = useCallback((id) => {
-    fetch(`/runs/${id}`)
+    fetch(apiUrl(`/runs/${id}`))
       .then((r) => r.json())
       .then((snapshot) => {
         setRun(snapshot);
@@ -39,18 +40,9 @@ export default function App() {
     event?.preventDefault();
     setError(null);
     try {
-      const response = await fetch("/runs", {
+      const response = await fetch(apiUrl("/runs"), {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          // Present only where the deployment sets one. It travels in the
-          // bundle, so it is public: it stops a crawler finding the endpoint,
-          // not a determined caller. The server's daily cap is what protects
-          // the search budget.
-          ...(import.meta.env.VITE_RUN_TOKEN
-            ? { "X-Run-Token": import.meta.env.VITE_RUN_TOKEN }
-            : {}),
-        },
+        headers: runHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           ...form,
           photo_url: photo?.public_url || "",

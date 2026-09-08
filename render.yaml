@@ -1,16 +1,18 @@
 # Render blueprint. Three resources: the API, its database, and the static
 # frontend that talks to it.
 #
-# The frontend calls relative paths (/runs, /subjects/photo, /uploads/...) so
-# that development and production are the same shape: Vite proxies them locally,
-# and the rewrites below proxy them here. Nothing is same-origin by accident and
-# no CORS configuration is needed in either place.
+# The frontend reaches the API by absolute URL, set once in the dashboard as
+# VITE_API_BASE. Development still proxies relative paths through Vite, so the
+# two environments differ in exactly one place: the base URL. See the note on
+# the static site below for why this is not done with rewrite routes.
 
 databases:
   - name: webutation-db
     databaseName: webutation
     user: webutation
-    plan: basic-256mb
+    # Render's instance-type names are CPU-and-memory, not tiers. The old
+    # "basic-256mb" is now "0.1c-256mb"; the old tier names are rejected.
+    plan: 0.1c-256mb
     postgresMajorVersion: "16"
 
 services:
@@ -18,7 +20,8 @@ services:
   - type: web
     name: webutation-api
     runtime: docker
-    plan: starter
+    # Formerly "starter": 0.5 CPU, 512MB. Same machine, current name.
+    plan: 0.5c-512mb
     dockerfilePath: ./Dockerfile
     healthCheckPath: /health
     # Creates any missing tables before the new instance takes traffic.
@@ -46,7 +49,15 @@ services:
       # The origin SerpAPI must be able to fetch subject photos from. Set this
       # to this service's own URL once Render has assigned it — reverse image
       # search cannot work until it is right, and /health says so plainly.
+      #
+      # Not derivable from fromService: its "host" property returns the private
+      # network hostname, which SerpAPI cannot reach.
       - key: PUBLIC_BASE_URL
+        sync: false
+
+      # Where the browser calls from, so the API can return CORS headers for it.
+      # Comma-separated; leave unset locally, where Vite keeps things same-origin.
+      - key: ALLOWED_ORIGINS
         sync: false
 
       # Secret. Set in the dashboard, never in this file.
@@ -77,35 +88,26 @@ services:
     buildCommand: cd frontend && npm ci && npm run build
     staticPublishPath: ./frontend/dist
     envVars:
+      # The API's public URL, set in the dashboard once Render has assigned it.
+      #
+      # This replaced a set of rewrite routes that proxied /runs, /subjects and
+      # /uploads to a hard-coded https://webutation-api.onrender.com. Two things
+      # were wrong with that. The hostname is a guess — Render appends a suffix
+      # when a service name is already taken, and the guess then 404s everything
+      # silently. And Render's own docs say a rewrite whose destination is an
+      # absolute URL on another host behaves as a redirect rather than a proxy,
+      # so the browser would have ended up cross-origin regardless, without the
+      # CORS headers that assumption was avoiding.
+      - key: VITE_API_BASE
+        sync: false
+
       # Baked into the bundle at build time, so it is public. That is why the
       # daily cap exists: the token stops a crawler, the cap stops a bill.
       - key: VITE_RUN_TOKEN
         sync: false
 
     routes:
-      # Proxy the API's paths, mirroring the dev-server proxy in
-      # frontend/vite.config.js. Order matters: these must precede the SPA
-      # fallback, or the fallback swallows them.
-      - type: rewrite
-        source: /runs
-        destination: https://webutation-api.onrender.com/runs
-      - type: rewrite
-        source: /runs/*
-        destination: https://webutation-api.onrender.com/runs/*
-      - type: rewrite
-        source: /subjects/*
-        destination: https://webutation-api.onrender.com/subjects/*
-      - type: rewrite
-        source: /uploads/*
-        destination: https://webutation-api.onrender.com/uploads/*
-      - type: rewrite
-        source: /fixtures
-        destination: https://webutation-api.onrender.com/fixtures
-      - type: rewrite
-        source: /health
-        destination: https://webutation-api.onrender.com/health
-
-      # Single-page app: every other path serves the shell.
+      # Single-page app: every path that is not a built asset serves the shell.
       - type: rewrite
         source: /*
         destination: /index.html

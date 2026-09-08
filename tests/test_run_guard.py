@@ -173,3 +173,73 @@ def test_an_unsearchable_request_does_not_spend_budget(client) -> None:
     response = http.post("/runs", json={}, headers={"X-Run-Token": "letmein"})
     assert response.status_code == 400
     assert guard.snapshot()["daily_used"] == 0
+
+
+# --- cross-origin, once the frontend is on its own host ------------------
+
+
+def build_app(monkeypatch, origins: str | None):
+    """A fresh app with ALLOWED_ORIGINS set, since middleware binds at import."""
+    import importlib
+
+    from app import api as api_module
+
+    if origins is None:
+        monkeypatch.delenv("ALLOWED_ORIGINS", raising=False)
+    else:
+        monkeypatch.setenv("ALLOWED_ORIGINS", origins)
+    return importlib.reload(api_module)
+
+
+def test_no_cors_headers_when_no_origins_are_configured(monkeypatch) -> None:
+    """Development is same-origin through the Vite proxy; nothing to allow."""
+    from fastapi.testclient import TestClient
+
+    module = build_app(monkeypatch, None)
+    response = TestClient(module.app).get(
+        "/health", headers={"Origin": "https://anything.example"}
+    )
+    assert "access-control-allow-origin" not in response.headers
+
+
+def test_a_configured_origin_is_allowed(monkeypatch) -> None:
+    from fastapi.testclient import TestClient
+
+    module = build_app(monkeypatch, "https://webutation-web.onrender.com")
+    response = TestClient(module.app).get(
+        "/health", headers={"Origin": "https://webutation-web.onrender.com"}
+    )
+    assert (
+        response.headers["access-control-allow-origin"]
+        == "https://webutation-web.onrender.com"
+    )
+
+
+def test_an_unlisted_origin_is_not_allowed(monkeypatch) -> None:
+    """A wildcard would let any page spend this deployment's search budget."""
+    from fastapi.testclient import TestClient
+
+    module = build_app(monkeypatch, "https://webutation-web.onrender.com")
+    response = TestClient(module.app).get(
+        "/health", headers={"Origin": "https://attacker.example"}
+    )
+    assert "access-control-allow-origin" not in response.headers
+
+
+def test_the_preflight_permits_the_run_token_header(monkeypatch) -> None:
+    """Without this the browser refuses the header and searches fail as CORS."""
+    from fastapi.testclient import TestClient
+
+    module = build_app(monkeypatch, "https://webutation-web.onrender.com")
+    response = TestClient(module.app).options(
+        "/runs",
+        headers={
+            "Origin": "https://webutation-web.onrender.com",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type,x-run-token",
+        },
+    )
+    assert response.status_code == 200
+    allowed = response.headers["access-control-allow-headers"].lower()
+    assert "x-run-token" in allowed
+    assert "content-type" in allowed

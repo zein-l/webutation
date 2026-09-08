@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { apiUrl } from "../api";
 
 /* Subject photo intake.
  *
@@ -19,7 +20,7 @@ export default function PhotoDrop({ photo, onPhoto, onError }) {
     try {
       const body = new FormData();
       body.append("file", file);
-      const response = await fetch("/subjects/photo?ttl_seconds=3600", {
+      const response = await fetch(apiUrl("/subjects/photo?ttl_seconds=3600"), {
         method: "POST",
         body,
       });

@@ -108,8 +108,22 @@ on the first search that carries a photo, and pay it again after every restart.
 A build that cannot fetch the weights fails rather than producing an image that
 will fail later on someone's request.
 
-The frontend calls relative paths, and the blueprint rewrites them to the API —
-the same shape as the Vite proxy used in development, so neither side needs CORS.
+The frontend reaches the API by absolute URL, set once as `VITE_API_BASE` when
+the API's hostname is known. Development still proxies relative paths through
+Vite (`frontend/vite.config.js`), so the two environments differ in exactly one
+place: the base URL.
+
+An earlier version proxied `/runs`, `/subjects` and `/uploads` through Render
+rewrite routes so that both environments were same-origin. That was wrong twice
+over. The destination had to name the API's hostname, which is a guess — Render
+appends a suffix when a service name is taken, and the guess then 404s every
+call silently. And Render's own documentation says a rewrite whose destination
+is an absolute URL on another host behaves as a redirect rather than a proxy, so
+the browser ends up cross-origin anyway, without the CORS headers the design was
+avoiding. `ALLOWED_ORIGINS` now names the static site explicitly; it is not `*`,
+because these routes accept an upload and a token, and a wildcard would let any
+page on the internet spend this deployment's search budget through a visitor's
+browser.
 
 **The run endpoint is guarded, because it is the only one that spends money.**
 Two separate controls, in `app/ratelimit.py`:
