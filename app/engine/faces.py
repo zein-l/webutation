@@ -86,6 +86,17 @@ class FaceConfig:
     #: INSIGHTFACE_HOME to move it.
     model_root: str | None = None
     det_size: tuple[int, int] = (640, 640)
+    #: Which buffalo_l models to load. The pack ships five; this system reads
+    #: only a detection box, a detection score and an embedding, so the 3D
+    #: landmark model (143MB on disk, ~150MB resident), the 2D landmark model
+    #: and the gender/age classifier are never consulted.
+    #:
+    #: Loading all five costs 422MB resident against 271MB for these two, which
+    #: is the difference between fitting and not fitting on a 512MB instance —
+    #: a deployed run was killed mid-search for exactly this reason. The saving
+    #: is incidental to a better argument: a system that scores identity has no
+    #: business loading a gender classifier it never asks.
+    allowed_modules: tuple[str, ...] = ("detection", "recognition")
     #: Detections below this confidence are discarded rather than compared.
     min_det_score: float = 0.50
 
@@ -174,6 +185,8 @@ class InsightFaceEmbedder:
         kwargs = {"name": self.config.model_name}
         if root:
             kwargs["root"] = root
+        if self.config.allowed_modules:
+            kwargs["allowed_modules"] = list(self.config.allowed_modules)
         app = FaceAnalysis(**kwargs)
         # ctx_id=-1 selects CPU. There is no GPU assumption anywhere here.
         app.prepare(ctx_id=-1, det_size=self.config.det_size)

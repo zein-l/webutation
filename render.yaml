@@ -17,7 +17,15 @@ services:
   - type: web
     name: webutation-api
     runtime: docker
-    # Formerly "starter": 0.5 CPU, 512MB. Same machine, current name.
+    # Formerly "starter": 0.5 CPU, 512MB.
+    #
+    # 512MB is tight and was, briefly, too tight: loading all five buffalo_l
+    # models took 422MB resident and the instance was killed mid-search.
+    # app/engine/faces.py now loads only detection and recognition (271MB),
+    # which is the two this system actually reads. If face verification starts
+    # dying again on larger result sets, this is the line to raise — the
+    # symptom is a run that vanishes with "No run with that id", because runs
+    # are held in memory and a restart takes them with it.
     plan: 0.5c-512mb
     dockerfilePath: ./Dockerfile
     healthCheckPath: /health

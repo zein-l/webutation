@@ -412,3 +412,65 @@ def test_a_face_match_overrides_the_thin_substance_rule() -> None:
     assert match.context_signal is None
     assert match.admitted is True
     assert match.rejected_because is None
+
+
+# --- only the models this system actually reads --------------------------
+
+
+def test_only_detection_and_recognition_are_loaded_by_default() -> None:
+    """buffalo_l ships five models; this system reads two.
+
+    It uses a detection box, a detection score and an embedding. The 3D
+    landmark model, the 2D landmark model and the gender/age classifier are
+    never consulted, and loading all five cost 422MB resident against 271MB for
+    these two — the difference between fitting and not fitting on a 512MB
+    instance, where a deployed run was killed mid-search.
+    """
+    from app.engine.faces import FaceConfig
+
+    assert FaceConfig().allowed_modules == ("detection", "recognition")
+
+
+def test_the_module_list_reaches_insightface() -> None:
+    """The config is not decorative: it has to be passed to FaceAnalysis."""
+    from app.engine import faces as faces_module
+
+    captured = {}
+
+    class FakeAnalysis:
+        def __init__(self, **kwargs):
+            captured.update(kwargs)
+
+        def prepare(self, **_kwargs):
+            return None
+
+    import sys
+    import types
+
+    stub = types.ModuleType("insightface.app")
+    stub.FaceAnalysis = FakeAnalysis
+    parent = types.ModuleType("insightface")
+    parent.app = stub
+    saved = {k: sys.modules.get(k) for k in ("insightface", "insightface.app")}
+    sys.modules["insightface"] = parent
+    sys.modules["insightface.app"] = stub
+    try:
+        faces_module.InsightFaceEmbedder(
+            faces_module.FaceConfig(model_root="/tmp/models")
+        )._load()
+    finally:
+        for k, v in saved.items():
+            if v is None:
+                sys.modules.pop(k, None)
+            else:
+                sys.modules[k] = v
+
+    assert captured["allowed_modules"] == ["detection", "recognition"]
+    assert captured["name"] == "buffalo_l"
+
+
+def test_every_module_can_be_requested_back() -> None:
+    """An empty tuple means "load the pack as it ships"."""
+    from app.engine.faces import FaceConfig
+
+    assert FaceConfig(allowed_modules=()).allowed_modules == ()
