@@ -82,15 +82,20 @@ function LongValue({ value }) {
  * prevent, and no caption undoes a photograph. Nothing verified means nothing
  * rendered, not an empty frame.
  */
-// What to call a candidate that is not the subject. It has to name the
-// comparison that actually ran: on a photo-only search no name was supplied,
-// so "same name" describes something that never happened — and contradicted
-// the rejection list, which correctly reported every one of them as decided on
-// face similarity.
-function otherLabel(compared) {
-  if (compared?.name) return "Other person, same name";
-  if (compared?.face) return "Other record, no face match";
-  return "Other record, not matched";
+// What to call a candidate that is not the subject.
+//
+// The server decides this, because it is the only place that knows what was
+// compared for *this* candidate. Two earlier versions derived it here and both
+// were wrong: the first hardcoded "Other person, same name", and the second
+// read the run-level `compared` block, which says a name was supplied and not
+// that it matched anything. On a mixed search most candidates come from
+// reverse image search and score 0.00 on the name — 79 of 116 in one live run,
+// every one of them labelled as sharing a name it did not share.
+//
+// The fallback is for reports built before the server sent a stamp. It says
+// only what is true of any non-anchor candidate, and claims no comparison.
+function otherLabel(candidate) {
+  return candidate?.stamp || "Other record, not matched";
 }
 
 function VerifiedFaces({ images }) {
@@ -129,7 +134,7 @@ function Freshness({ value }) {
   return <span>{Number(value).toFixed(2)}</span>;
 }
 
-export default function Candidate({ candidate, compared }) {
+export default function Candidate({ candidate }) {
   const {
     is_anchor: isAnchor,
     name,
@@ -153,9 +158,9 @@ export default function Candidate({ candidate, compared }) {
   return (
     <article className={`cand${isAnchor ? " cand--anchor" : ""}`}>
       {isAnchor ? (
-        <div className="cand__stamp">The person searched for</div>
+        <div className="cand__stamp">{candidate.stamp || "The person searched for"}</div>
       ) : (
-        <div className="cand__stamp muted">{otherLabel(compared)}</div>
+        <div className="cand__stamp muted">{otherLabel(candidate)}</div>
       )}
 
       <h3 className="cand__name">{displayName || name || "unnamed"}</h3>

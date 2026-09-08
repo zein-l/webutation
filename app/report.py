@@ -122,6 +122,30 @@ def _freshness(item) -> str | float:
     return round(float(item.components["freshness"]), 4)
 
 
+def _candidate_stamp(candidate: CandidateDraft, components: dict) -> str:
+    """What to call this candidate, from what was compared for this candidate.
+
+    The run-level ``compared`` block says a name was supplied. It does not say
+    the name was compared *to this candidate*, and on a mixed search most of
+    them are not: a reverse image search returns pages about whoever the
+    picture resembles, and 79 of 116 non-anchor candidates in one live run had
+    a name similarity of exactly 0.00 while being labelled "Other person, same
+    name". "Prof Mark Walterfang", "Meet the PPG Team" and "My Bio" among them.
+
+    The candidate's own name score is the right discriminator and is already
+    computed. Zero means the name was compared and did not match, or that there
+    was no name to compare — either way the label may not claim one.
+    """
+    if candidate.is_anchor:
+        return "The person searched for"
+    if components.get("name"):
+        return "Other person, same name"
+    # A face was compared and did not match: that is what decided this one.
+    if components.get("face") is not None:
+        return "Other record, no face match"
+    return "Other record, not matched"
+
+
 def _first_name_for(candidate: CandidateDraft, ref: str) -> str | None:
     """The name one record of this candidate carried, for display."""
     for assertion in candidate.assertions:
@@ -132,7 +156,11 @@ def _first_name_for(candidate: CandidateDraft, ref: str) -> str | None:
     return None
 
 
-def _plain_basis(candidate: CandidateDraft, subject: Query | None = None) -> str:
+def _plain_basis(
+    candidate: CandidateDraft,
+    subject: Query | None = None,
+    name_signal: float | None = None,
+) -> str:
     """What holds this candidate together, in words a reviewer would use.
 
     For an anchor this is a union across its records, and it now says so. It
@@ -191,14 +219,19 @@ def _plain_basis(candidate: CandidateDraft, subject: Query | None = None) -> str
 
     basis = candidate.grouping_basis.value
 
-    # A photo-only search supplies no name, so no name was ever compared. The
-    # grouping basis still reads "name_only", because that describes how the
-    # records were clustered — by their own name keys, against each other —
-    # and not what the subject was matched on. Rendered as "a shared name
-    # only" it claimed a comparison that never happened, and contradicted the
-    # rejection list, which correctly said every one of these was decided on
-    # face similarity.
-    if not getattr(subject, "name", None) and basis in {"name_only", "name_and_locality"}:
+    # "name_only" describes how records were clustered — by their own name keys,
+    # against each other — and not what the subject was matched on. Rendered as
+    # "a shared name only" it claims a comparison against the subject that may
+    # never have happened.
+    #
+    # The test is this candidate's own name score, not whether the run had a
+    # name. A photo-only search compares no name at all; a mixed search
+    # compares one and most candidates still score zero, because a reverse
+    # image search returns pages about whoever the picture resembles. Both
+    # cases were claiming a shared name, and the rejection list beneath
+    # correctly reported them as decided on something else.
+    unmatched_name = not name_signal
+    if unmatched_name and basis in {"name_only", "name_and_locality"}:
         records = len({a.record_ref for a in candidate.assertions if a.record_ref})
         if records <= 1:
             return "a single record, matched against nothing"
@@ -338,7 +371,8 @@ def _serialise_candidate(
         "localities": sorted(k for k in candidate.locality_keys if k),
         "p": round(float(p), 4),
         "grouping_basis": candidate.grouping_basis.value,
-        "held_by": _plain_basis(candidate, subject),
+        "held_by": _plain_basis(candidate, subject, p.components.get("name")),
+        "stamp": _candidate_stamp(candidate, p.components),
         "signals": {
             key: (None if value is None else round(float(value), 4))
             for key, value in p.components.items()

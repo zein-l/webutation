@@ -187,12 +187,12 @@ export default function App() {
                     failure.
                   </p>
                 )}
-                {anchor && <Candidate candidate={anchor} compared={report.compared} />}
+                {anchor && <Candidate candidate={anchor} />}
                 {others.length > 0 && (
                   <details className="expand">
                     <summary>{separatedBy(others.length)}</summary>
                     {others.map((c) => (
-                      <Candidate candidate={c} key={c.index} compared={report.compared} />
+                      <Candidate candidate={c} key={c.index} />
                     ))}
                   </details>
                 )}
