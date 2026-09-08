@@ -49,3 +49,47 @@ def test_health_exposes_it(monkeypatch) -> None:
     body = TestClient(api_module.app).get("/health").json()
     assert "memory" in body
     assert set(body["memory"]) >= {"rss_mb", "peak_rss_mb", "limit_mb"}
+
+
+# --- does the cache survive a deploy? -----------------------------------
+
+
+def test_storage_reports_unknown_rather_than_false_off_linux() -> None:
+    """No mount table means the question cannot be answered, not answered no.
+
+    A cache on the container's own filesystem and a cache on an attached disk
+    look identical from outside until something is lost, so guessing "not
+    persistent" would be as misleading as guessing "persistent".
+    """
+    from app.meminfo import storage_report
+
+    report = storage_report()
+    assert set(report) >= {"path", "persistent", "cached_responses"}
+    assert report["persistent"] in (None, True, False)
+
+
+def test_storage_does_not_walk_the_whole_cache(tmp_path, monkeypatch) -> None:
+    """Render polls /health continuously; this must stay a cheap call."""
+    from app import meminfo
+
+    (tmp_path / "a.json").write_text("{}")
+    (tmp_path / "b.json").write_text("{}")
+    nested = tmp_path / "images"
+    nested.mkdir()
+    for i in range(50):
+        (nested / f"{i}.bin").write_bytes(b"x")
+
+    monkeypatch.setattr(meminfo, "_CACHE_DIR", tmp_path)
+    report = meminfo.storage_report()
+
+    assert report["cached_responses"] == 2, "top-level responses only, not a walk"
+
+
+def test_health_exposes_storage() -> None:
+    from fastapi.testclient import TestClient
+
+    from app import api as api_module
+
+    body = TestClient(api_module.app).get("/health").json()
+    assert "storage" in body
+    assert set(body["storage"]) >= {"path", "persistent", "cached_responses"}

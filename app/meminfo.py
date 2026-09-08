@@ -1,4 +1,5 @@
-"""How much memory this process is using, and how much it is allowed.
+"""How much memory this process is using, how much it is allowed, and
+whether the directory it writes to survives a restart.
 
 Reported by ``/health`` because the deployed service was killed mid-search
 twice, and "the run vanished" is a symptom that could equally be a crash, a
@@ -74,4 +75,55 @@ def memory_report() -> dict:
     }
     if peak is not None and limit:
         report["peak_pct_of_limit"] = round(100 * peak / limit, 1)
+    return report
+
+
+#: Where the runtime writes: responses, images, uploads and the signing key.
+#: Relative, resolved against the working directory, matching app/cache.py.
+_CACHE_DIR = Path("cache")
+
+_MOUNTS = Path("/proc/self/mounts")
+
+
+def storage_report() -> dict:
+    """Whether the cache directory is a mount of its own, and what is in it.
+
+    A cache on the container's own filesystem is thrown away by every deploy;
+    a cache on an attached disk is not. Those two look identical from outside
+    until the moment something is lost, which is the wrong time to find out.
+
+    ``persistent`` is read from the kernel's mount table rather than assumed
+    from configuration, because the question is whether the disk is mounted
+    here and now, not whether a file somewhere asks for one.
+    """
+    resolved = _CACHE_DIR.resolve()
+    report: dict = {
+        "path": str(resolved),
+        "persistent": None,
+        "cached_responses": None,
+    }
+
+    # Top level only. Render polls this endpoint continuously and a warm cache
+    # holds hundreds of files; walking it recursively on every health check
+    # would turn a liveness probe into disk work. The count answers "is
+    # anything here", which is the question, and cached responses live at the
+    # top level anyway.
+    try:
+        report["cached_responses"] = sum(
+            1 for entry in resolved.iterdir() if entry.suffix == ".json"
+        )
+    except OSError:
+        pass
+
+    try:
+        mounts = _MOUNTS.read_text().splitlines()
+    except OSError:
+        # Not Linux. Unknown is the honest answer, not False.
+        return report
+
+    target = str(resolved)
+    report["persistent"] = any(
+        len(parts) > 1 and parts[1] == target
+        for parts in (line.split() for line in mounts)
+    )
     return report

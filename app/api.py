@@ -26,7 +26,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 
 from app.cache import IMAGE_USER_AGENT
-from app.meminfo import memory_report
+from app.meminfo import memory_report, storage_report
 from app.ratelimit import GUARD, client_key
 from app.report import ADAPTERS, available_fixtures, get_run, start_run
 from app.uploads import (
@@ -256,6 +256,9 @@ def health() -> dict:
         # rounds of "is the fix live yet?" this says so directly. Render sets
         # RENDER_GIT_COMMIT; anywhere else it is null rather than guessed.
         "commit": (os.environ.get("RENDER_GIT_COMMIT") or "")[:7] or None,
+        # Whether the cache survives a deploy, read from the mount table
+        # rather than inferred from configuration.
+        "storage": storage_report(),
     }
 
 
