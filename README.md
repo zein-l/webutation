@@ -99,8 +99,9 @@ gap, not a decision.
 
 ## Deploying it
 
-`render.yaml` is a Render blueprint describing three resources: the API as a
-Docker web service, a Postgres database, and the frontend as a static site.
+`render.yaml` is a Render blueprint describing two resources: the API as a
+Docker web service and the frontend as a static site. **There is no database in
+the deployment**, and that is deliberate — see below.
 
 The face model is baked into the image at build time (`Dockerfile`), not
 downloaded on first request. A cold container would otherwise stall for ~300MB
@@ -139,13 +140,24 @@ Both are in-process, so they reset on restart and are not shared between
 instances. That is honest for one Starter instance; scaling out needs this state
 in Postgres or Redis.
 
-Two things about the deployed service worth knowing before reading too much into
-it. The HTTP path never opens a database session — runs are held in memory and
-lost on restart, so the database and its schema exist for the persistence layer
-that `scripts/` and the tests exercise, not because the API writes to it. And
-the search cache and uploaded photos live on the container's ephemeral disk, so
-a restart loses both: cached searches must be re-bought, and photos disappear
-ahead of their retention window rather than after it.
+**Runs are in memory on the deployed instance.** The HTTP request path never
+opens a database session, so the deployment provisions no Postgres at all. A run
+lives in `app/report.py`'s process memory and is gone when the instance
+restarts; its URL stops resolving. A database that served nothing at runtime was
+costing $10.50 a month, so it was removed rather than kept for appearances.
+
+The persistence layer is not gone with it. `app/models.py`, `app/db.py` and
+`tests/test_persistence.py` remain, and run locally against the `docker compose`
+Postgres — that is where schema, lineage and round-tripping are exercised. The
+engine is built on first use rather than on import, so importing the HTTP app
+reaches no database: `tests/test_no_database.py` asserts that a search completes
+end to end with `DATABASE_URL` unset and no engine ever constructed. Wiring the
+deployed API to a database is therefore a matter of adding one back, not of
+rebuilding the layer.
+
+The search cache and uploaded photos also live on the container's ephemeral
+disk, so a restart loses both: cached searches must be re-bought, and photos
+disappear ahead of their retention window rather than after it.
 
 ## What the numbers mean
 

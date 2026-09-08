@@ -1,19 +1,16 @@
-# Render blueprint. Three resources: the API, its database, and the static
-# frontend that talks to it.
+# Render blueprint. Two resources: the API and the static frontend that talks
+# to it.
 #
 # The frontend reaches the API by absolute URL, set once in the dashboard as
 # VITE_API_BASE. Development still proxies relative paths through Vite, so the
 # two environments differ in exactly one place: the base URL. See the note on
 # the static site below for why this is not done with rewrite routes.
 
-databases:
-  - name: webutation-db
-    databaseName: webutation
-    user: webutation
-    # Render's instance-type names are CPU-and-memory, not tiers. The old
-    # "basic-256mb" is now "0.1c-256mb"; the old tier names are rejected.
-    plan: 0.1c-256mb
-    postgresMajorVersion: "16"
+# There is no database here on purpose. The HTTP request path never opens a
+# session: runs are held in memory by app/report.py and are lost on restart.
+# Provisioning Postgres for the deployment cost $10.50 a month to serve nothing.
+# The persistence layer and its tests remain in the codebase and still run
+# locally against docker-compose; only the deployment goes without.
 
 services:
   # --- API ---------------------------------------------------------------
@@ -24,24 +21,9 @@ services:
     plan: 0.5c-512mb
     dockerfilePath: ./Dockerfile
     healthCheckPath: /health
-    # Creates any missing tables before the new instance takes traffic.
-    # create_all only adds what is absent: it will not alter an existing table
-    # or enum, so a model change still needs "python -m app.db --drop" run by
-    # hand against the deployed database.
-    #
-    # Worth knowing: the HTTP request path never opens a database session. Runs
-    # are held in memory by app/report.py and are lost on restart. The schema
-    # and the database are here for the persistence layer that scripts/ and the
-    # test suite exercise, not because the deployed API writes to it.
-    preDeployCommand: python -m app.db
     # The face model is in the image, so a deploy does not download 300MB
     # before it can serve; but loading it still takes a moment on first use.
     envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: webutation-db
-          property: connectionString
-
       # Where the model was baked. Must match the Dockerfile.
       - key: INSIGHTFACE_HOME
         value: /opt/insightface
