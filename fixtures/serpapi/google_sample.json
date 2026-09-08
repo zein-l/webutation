@@ -1,0 +1,72 @@
+{
+  "search_metadata": {
+    "id": "6a9cae8e529e4b8316989e1d",
+    "status": "Success",
+    "json_endpoint": "https://serpapi.com/searches/Brq8kmNPVSYur4xX6C4duJS_9RluNy-880PvF7-1gHs/6a9cae8e529e4b8316989e1d.json",
+    "markdown_endpoint": "https://serpapi.com/searches/Brq8kmNPVSYur4xX6C4duJS_9RluNy-880PvF7-1gHs/6a9cae8e529e4b8316989e1d.md",
+    "pixel_position_endpoint": "https://serpapi.com/searches/Brq8kmNPVSYur4xX6C4duJS_9RluNy-880PvF7-1gHs/6a9cae8e529e4b8316989e1d.json_with_pixel_position",
+    "created_at": "2026-09-06 00:06:38 UTC",
+    "processed_at": "2026-09-06 00:06:38 UTC",
+    "google_url": "https://www.google.com/search?q=webutation&oq=webutation&sourceid=chrome&ie=UTF-8",
+    "raw_html_file": "https://serpapi.com/searches/Brq8kmNPVSYur4xX6C4duJS_9RluNy-880PvF7-1gHs/6a9cae8e529e4b8316989e1d.html",
+    "total_time_taken": 2.54
+  },
+  "search_parameters": {
+    "engine": "google",
+    "q": "webutation",
+    "google_domain": "google.com",
+    "device": "desktop"
+  },
+  "search_information": {
+    "query_displayed": "webutation",
+    "total_results": 103,
+    "time_taken_displayed": 0.24,
+    "organic_results_state": "Results for exact spelling"
+  },
+  "organic_results": [
+    {
+      "position": 1,
+      "title": "Webutation \u2014 From request to report, in one secure portal",
+      "link": "https://webutation.io/",
+      "displayed_link": "https://webutation.io",
+      "snippet": "A secure client portal for insurance, TPA, legal and SIU teams to order and manage fraud, OSINT and surveillance investigations \u2014 submit a ...",
+      "source": "Webutation"
+    },
+    {
+      "position": 2,
+      "title": "Marcus A. Webb - Operations Manager at Meridian Freight",
+      "link": "https://www.linkedin.com/in/marcus-webb-atx",
+      "displayed_link": "linkedin.com > in > marcus-webb-atx",
+      "snippet": "Operations Manager at Meridian Freight Systems. Austin, TX. 8 years in logistics.",
+      "source": "LinkedIn"
+    },
+    {
+      "position": 3,
+      "title": "Marcus Webb named operations lead | TechCrunch",
+      "link": "https://techcrunch.com/2025/04/11/meridian-freight-ops/",
+      "displayed_link": "https://www.trustpilot.com \u203a ... \u203a Software Company",
+      "snippet": "Meridian Freight has appointed Marcus Webb to lead operations.",
+      "source": "TechCrunch",
+      "date": "Apr 11, 2025"
+    },
+    {
+      "position": 4,
+      "title": "Marcus Webb Public Records - Spokeo",
+      "link": "https://www.spokeo.com/Marcus-Webb/Texas/Austin",
+      "displayed_link": "5 followers",
+      "snippet": "Found 12 records for Marcus Webb in Austin, TX. Age 47.",
+      "source": "Spokeo"
+    }
+  ],
+  "inline_images": [
+    {
+      "position": 1,
+      "link": "https://www.imdb.com/name/nm9911223/",
+      "source": "IMDb",
+      "source_name": "IMDb",
+      "title": "Marcus Webb",
+      "original": "https://m.media-amazon.com/images/M/marcus-webb-full.jpg",
+      "thumbnail": "https://encrypted-tbn0.gstatic.com/images?q=tbn:marcus-webb"
+    }
+  ]
+}

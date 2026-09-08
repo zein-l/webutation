@@ -1,0 +1,14 @@
+{
+  "search_metadata": {
+    "id": "zero",
+    "status": "Success"
+  },
+  "search_parameters": {
+    "engine": "google",
+    "q": "asdkjhqwlekjhasd"
+  },
+  "search_information": {
+    "organic_results_state": "Fully empty"
+  },
+  "error": "Google hasn't returned any results for this query."
+}

@@ -1,0 +1,7 @@
+{
+  "search_metadata": {
+    "id": "err",
+    "status": "Error"
+  },
+  "error": "Invalid API key. Your API key should be here: https://serpapi.com/manage-api-key"
+}

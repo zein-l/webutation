@@ -1,0 +1,111 @@
+# Render blueprint. Three resources: the API, its database, and the static
+# frontend that talks to it.
+#
+# The frontend calls relative paths (/runs, /subjects/photo, /uploads/...) so
+# that development and production are the same shape: Vite proxies them locally,
+# and the rewrites below proxy them here. Nothing is same-origin by accident and
+# no CORS configuration is needed in either place.
+
+databases:
+  - name: webutation-db
+    databaseName: webutation
+    user: webutation
+    plan: basic-256mb
+    postgresMajorVersion: "16"
+
+services:
+  # --- API ---------------------------------------------------------------
+  - type: web
+    name: webutation-api
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    # Creates any missing tables before the new instance takes traffic.
+    # create_all only adds what is absent: it will not alter an existing table
+    # or enum, so a model change still needs "python -m app.db --drop" run by
+    # hand against the deployed database.
+    #
+    # Worth knowing: the HTTP request path never opens a database session. Runs
+    # are held in memory by app/report.py and are lost on restart. The schema
+    # and the database are here for the persistence layer that scripts/ and the
+    # test suite exercise, not because the deployed API writes to it.
+    preDeployCommand: python -m app.db
+    # The face model is in the image, so a deploy does not download 300MB
+    # before it can serve; but loading it still takes a moment on first use.
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: webutation-db
+          property: connectionString
+
+      # Where the model was baked. Must match the Dockerfile.
+      - key: INSIGHTFACE_HOME
+        value: /opt/insightface
+
+      # The origin SerpAPI must be able to fetch subject photos from. Set this
+      # to this service's own URL once Render has assigned it — reverse image
+      # search cannot work until it is right, and /health says so plainly.
+      - key: PUBLIC_BASE_URL
+        sync: false
+
+      # Secret. Set in the dashboard, never in this file.
+      - key: SERPAPI_KEY
+        sync: false
+
+      # Shared secret the frontend sends as X-Run-Token. Generated once by
+      # Render; copy it into the static site's VITE_RUN_TOKEN.
+      - key: RUN_ACCESS_TOKEN
+        generateValue: true
+
+      # The budget. A run costs live search calls, so this is the control that
+      # matters; the token only decides who may ask. See app/ratelimit.py.
+      - key: MAX_RUNS_PER_DAY
+        value: "100"
+      - key: MAX_RUNS_PER_IP_HOURLY
+        value: "10"
+
+      # Subject photos are deleted after this long. Publishing a photograph of
+      # a person is not a neutral act; the window is short by construction.
+      - key: UPLOAD_RETENTION_SECONDS
+        value: "86400"
+
+  # --- frontend ----------------------------------------------------------
+  - type: web
+    name: webutation-web
+    runtime: static
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: ./frontend/dist
+    envVars:
+      # Baked into the bundle at build time, so it is public. That is why the
+      # daily cap exists: the token stops a crawler, the cap stops a bill.
+      - key: VITE_RUN_TOKEN
+        sync: false
+
+    routes:
+      # Proxy the API's paths, mirroring the dev-server proxy in
+      # frontend/vite.config.js. Order matters: these must precede the SPA
+      # fallback, or the fallback swallows them.
+      - type: rewrite
+        source: /runs
+        destination: https://webutation-api.onrender.com/runs
+      - type: rewrite
+        source: /runs/*
+        destination: https://webutation-api.onrender.com/runs/*
+      - type: rewrite
+        source: /subjects/*
+        destination: https://webutation-api.onrender.com/subjects/*
+      - type: rewrite
+        source: /uploads/*
+        destination: https://webutation-api.onrender.com/uploads/*
+      - type: rewrite
+        source: /fixtures
+        destination: https://webutation-api.onrender.com/fixtures
+      - type: rewrite
+        source: /health
+        destination: https://webutation-api.onrender.com/health
+
+      # Single-page app: every other path serves the shell.
+      - type: rewrite
+        source: /*
+        destination: /index.html

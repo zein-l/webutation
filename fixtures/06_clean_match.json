@@ -1,0 +1,94 @@
+{
+  "search_metadata": {
+    "id": "fx_06_clean_match",
+    "status": "Success",
+    "engine": "fixture_people_search",
+    "created_at": "2026-03-12T09:14:22Z",
+    "processed_in_ms": 412,
+    "credits_used": 1,
+    "total_results": 3
+  },
+  "search_parameters": {
+    "name": "Marcus Webb",
+    "address": "Austin, TX",
+    "context": "logistics operations",
+    "num": 10
+  },
+  "results": [
+    {
+      "position": 1,
+      "result_id": "travis-mw-88213",
+      "title": "MARCUS A. WEBB - Travis County Official Public Records",
+      "link": "https://records.traviscountytx.gov/person/MW-88213",
+      "displayed_link": "records.traviscountytx.gov > person > MW-88213",
+      "snippet": "Recorded documents for MARCUS A. WEBB, DOB 04/02/1979, of AUSTIN, TX. Instrument filed 2019-04-02 in Travis County.",
+      "publisher": "records.traviscountytx.gov",
+      "record_date": "2019-04-02",
+      "access": "PUBLIC_WEB",
+      "lineage": {
+        "origin": "travis_county_clerk",
+        "state": "known_origin",
+        "note": "primary filing office, first-party record"
+      },
+      "evidence": {
+        "kind": "direct_observation",
+        "note": "the filing office recorded the instrument itself"
+      },
+      "fields": {
+        "full_name": "MARCUS A. WEBB",
+        "date_of_birth": "04/02/1979",
+        "city": "Austin, TX"
+      }
+    },
+    {
+      "position": 2,
+      "result_id": "li-marcus-webb-atx",
+      "title": "Marcus A. Webb - Operations Manager at Meridian Freight Systems",
+      "link": "https://www.linkedin.com/in/marcus-webb-atx",
+      "displayed_link": "linkedin.com > in > marcus-webb-atx",
+      "snippet": "Operations Manager at Meridian Freight Systems. Austin, TX. 8 years in freight and logistics operations.",
+      "publisher": "linkedin.com",
+      "record_date": "2025-11-18",
+      "access": "PUBLIC_WEB",
+      "lineage": {
+        "origin": "linkedin",
+        "state": "known_origin",
+        "note": "self-reported profile, first-party to the platform"
+      },
+      "evidence": {
+        "kind": "self_reported",
+        "note": "profile fields are asserted by the subject, not verified"
+      },
+      "fields": {
+        "profile_name": "Marcus A. Webb",
+        "location": "Austin, TX",
+        "current_employer": "Meridian Freight Systems",
+        "job_title": "Operations Manager"
+      }
+    },
+    {
+      "position": 3,
+      "result_id": "pdl-MW-4471902",
+      "title": "Marcus A Webb - Person Record",
+      "link": "https://api.peopledatalabs.com/v5/person/MW-4471902",
+      "displayed_link": "api.peopledatalabs.com > v5 > person",
+      "snippet": "Enriched person record for Marcus A Webb. Locality: Austin, TX, United States.",
+      "publisher": "peopledatalabs.com",
+      "record_date": "2025-09-30",
+      "access": "LICENSED",
+      "lineage": {
+        "origin": "pdl",
+        "state": "known_origin",
+        "note": "aggregator acting as the origin for its own resolved record"
+      },
+      "evidence": {
+        "kind": "republished",
+        "note": "aggregator row reproducing records collected elsewhere"
+      },
+      "fields": {
+        "display_name": "Marcus A Webb",
+        "locality": "Austin, TX"
+      }
+    }
+  ]
+}

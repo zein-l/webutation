@@ -1,0 +1,48 @@
+# --- secrets -------------------------------------------------------------
+.env
+*.pem
+*.key
+
+# --- collected data ------------------------------------------------------
+# Search responses, fetched images, uploaded subject photos and the HMAC
+# signing key all live here. It holds photographs of real people and the
+# personal data a run collected about them, so it never leaves this machine.
+cache/
+uploads/
+
+# Loose images at the repo root: subject photographs handed to the pipeline,
+# and screenshots, which have carried an API key in a visible command line.
+/*.png
+/*.jpg
+/*.jpeg
+/*.webp
+
+# --- model weights -------------------------------------------------------
+# buffalo_l is ~300MB and is baked into the Docker image at build time.
+*.onnx
+insightface-models/
+.insightface/
+models/buffalo_l/
+
+# --- environments and builds ---------------------------------------------
+venv/
+.venv/
+node_modules/
+frontend/dist/
+frontend/.vite/
+dist/
+build/
+
+# --- python --------------------------------------------------------------
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# --- editors and os ------------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

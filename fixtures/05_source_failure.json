@@ -1,0 +1,16 @@
+{
+  "search_metadata": {
+    "id": "fx_05_source_failure",
+    "status": "Success",
+    "engine": "fixture_people_search",
+    "created_at": "2026-03-12T09:14:22Z"
+  },
+  "search_parameters": {
+    "name": "Michael Petrie"
+  },
+  "source_run": {
+    "status": "failed",
+    "error_reason": "HTTPError: 503 Service Unavailable from the provider"
+  },
+  "results": []
+}

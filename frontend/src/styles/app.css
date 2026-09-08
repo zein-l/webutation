@@ -1,0 +1,453 @@
+/* Webutation — case file, not dashboard.
+ *
+ * Palette taken from webutation.io so this reads as their internal tool: their
+ * near-black grounds, their blue, their red. Only the surface moved; the
+ * structure, the type and every rule below are unchanged.
+ *
+ * The rule the palette still enforces: colour never encodes confidence. A high
+ * score does not turn green and a low one does not turn red, because that
+ * would hand a reviewer a verdict the numbers do not support. Confidence is
+ * carried by bar geometry and a printed figure. Their green is deliberately
+ * unused for exactly that reason. Blue marks structure and interaction; oxide
+ * appears only where something failed, was refused, or contradicts something
+ * else.
+ */
+
+:root {
+  --stock: #0c0d0f;       /* their ground */
+  --stock-deep: #12151d;  /* raised panels */
+  --rule: #1c2230;        /* table rules */
+  --rule-firm: #2b3446;   /* section divisions */
+  --ink: #e6e9ef;         /* primary text */
+  --graphite: #94a3b8;    /* secondary text */
+  --accent: #5683da;      /* their blue: structure and interaction, never score */
+  --accent-deep: #4257bd; /* the same blue where white type sits on it */
+  --oxide: #f0635c;       /* their red, exceptions only */
+  --oxide-wash: #24151a;
+  --wash: #1a2030;        /* gauge track, recessed fills */
+
+  --text: "Archivo", system-ui, -apple-system, sans-serif;
+  --data: "Courier Prime", "Courier New", monospace;
+
+  --gutter: 1.5rem;
+  --rail: 8.5rem;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--stock);
+  /* The ruling is nearly gone: a whisper of technical surface rather than a
+   * notepad. On a dark ground a visible grid reads as noise. */
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.035) 1px, transparent 1px);
+  background-size: 1.25rem 1.25rem;
+  background-position: -1px -1px;
+  color: var(--ink);
+  font-family: var(--text);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+@media (prefers-color-scheme: light) {
+  /* The document keeps its colour either way. The palette carries meaning —
+   * oxide for failure, blue for structure — and inverting it would break the
+   * one rule the page is built on. */
+  body { background-color: var(--stock); color: var(--ink); }
+}
+
+h1, h2, h3 { font-weight: 600; letter-spacing: -0.01em; margin: 0; }
+p { margin: 0 0 0.75rem; max-width: 68ch; }
+
+a { color: var(--ink); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------- shell -- */
+
+.sheet {
+  max-width: 68rem;
+  margin: 0 auto;
+  padding: 0 var(--gutter) 5rem;
+}
+
+.masthead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1.25rem;
+  padding: 1.5rem 0 0.75rem;
+  border-bottom: 1px solid var(--rule-firm);
+}
+.masthead__name { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.02em; }
+.masthead__role { color: var(--graphite); font-size: 0.9rem; }
+.masthead__case { margin-left: auto; font-family: var(--data); font-size: 0.85rem; }
+
+/* Binding rail: section index and case metadata, like a form's stub. */
+.frame { display: grid; grid-template-columns: var(--rail) 1fr; gap: 0 var(--gutter); }
+.rail { border-right: 1px solid var(--rule-firm); padding-top: 1.5rem; }
+.rail__item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-left: 3px solid transparent;
+  padding: 0.3rem 0.6rem 0.3rem 0.5rem;
+  font: inherit;
+  font-size: 0.83rem;
+  color: var(--graphite);
+  cursor: pointer;
+}
+.rail__item:hover { color: var(--ink); }
+.rail__item--on { border-left-color: var(--accent); color: var(--ink); font-weight: 600; }
+.rail__num { font-family: var(--data); margin-right: 0.4rem; }
+.rail__meta { padding: 0.9rem 0.5rem 0; font-size: 0.78rem; color: var(--graphite); }
+.rail__meta dt { margin-top: 0.55rem; }
+.rail__meta dd { margin: 0; font-family: var(--data); color: var(--ink); word-break: break-word; }
+
+.body { padding-top: 1.5rem; min-width: 0; }
+
+.section { margin-bottom: 2.5rem; scroll-margin-top: 1rem; }
+.section__head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  border-bottom: 1px solid var(--rule-firm);
+  padding-bottom: 0.35rem;
+  margin-bottom: 0.9rem;
+}
+.section__num { font-family: var(--data); font-size: 0.85rem; color: var(--graphite); }
+.section__title { font-size: 1rem; font-weight: 600; }
+.section__count { margin-left: auto; font-family: var(--data); font-size: 0.85rem; color: var(--graphite); }
+
+.note { color: var(--graphite); font-size: 0.85rem; max-width: 62ch; }
+
+/* ------------------------------------------------------------- controls -- */
+
+.field { display: block; margin-bottom: 0.9rem; }
+.field__label { display: block; font-size: 0.85rem; margin-bottom: 0.25rem; }
+.field__hint { color: var(--graphite); font-size: 0.78rem; margin-top: 0.2rem; }
+.field input,
+.field textarea {
+  width: 100%;
+  font: inherit;
+  color: var(--ink);
+  background: var(--stock-deep);
+  border: 1px solid var(--rule-firm);
+  border-radius: 0;
+  padding: 0.45rem 0.55rem;
+}
+.field input::placeholder,
+.field textarea::placeholder { color: #64748b; }
+.field textarea { min-height: 4.5rem; resize: vertical; }
+.field input:focus, .field textarea:focus { border-color: var(--accent); outline: none; box-shadow: inset 0 -2px 0 var(--accent); }
+
+.button {
+  font: inherit;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--accent-deep);
+  border: 1px solid var(--accent-deep);
+  border-radius: 0;
+  padding: 0.5rem 1.1rem;
+  cursor: pointer;
+}
+.button:hover { background: var(--accent); border-color: var(--accent); }
+.button:disabled { background: var(--graphite); border-color: var(--graphite); cursor: not-allowed; }
+.button--quiet { color: var(--ink); background: transparent; border-color: var(--rule-firm); }
+.button--quiet:hover { background: var(--wash); border-color: var(--accent); }
+
+/* ---------------------------------------------------------------- drop -- */
+
+.drop {
+  border: 1px dashed var(--rule-firm);
+  background: var(--stock-deep);
+  padding: 1.5rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  font: inherit;
+  color: var(--ink);
+}
+.drop--over { border-color: var(--accent); border-style: solid; background: var(--wash); }
+.drop__hint { color: var(--graphite); font-size: 0.83rem; margin-top: 0.3rem; }
+.drop__preview { display: flex; gap: 0.9rem; align-items: flex-start; text-align: left; }
+.drop__preview img {
+  width: 92px; height: 92px; object-fit: cover;
+  border: 1px solid var(--rule-firm);
+}
+.drop__meta { font-family: var(--data); font-size: 0.78rem; word-break: break-all; }
+
+/* ---------------------------------------------------- confidence gauge -- */
+/* The one bold device. A ticked scale with a hatched fill: the ticks say this
+ * is a reading, the hatching says it is estimated rather than measured. */
+
+.gauge { display: flex; align-items: center; gap: 0.6rem; }
+.gauge__track {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 5rem;
+  height: 0.85rem;
+  background: var(--wash);
+  border: 1px solid var(--rule-firm);
+}
+.gauge__fill {
+  position: absolute; inset: 0 auto 0 0;
+  /* One fill colour for every reading. A gauge that changed colour with its
+   * value would encode a verdict; the hatching says "estimated" instead. */
+  background-color: var(--ink);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(12, 13, 15, 0.42) 0 2px,
+    transparent 2px 5px
+  );
+}
+.gauge__ticks { position: absolute; inset: 0; pointer-events: none; }
+.gauge__tick { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--rule-firm); }
+.gauge__value { font-family: var(--data); font-size: 0.85rem; min-width: 3.1rem; text-align: right; }
+.gauge--lg .gauge__track { height: 1.4rem; }
+.gauge--lg .gauge__value { font-size: 1.5rem; min-width: 4.2rem; font-weight: 700; }
+.gauge--sm .gauge__track { height: 0.6rem; min-width: 3.5rem; }
+.gauge--sm .gauge__value { font-size: 0.78rem; min-width: 2.7rem; }
+
+/* --------------------------------------------------------- candidates -- */
+
+.cand { border: 1px solid var(--rule-firm); background: var(--stock-deep); padding: 1rem; margin-bottom: 1rem; }
+.cand--anchor {
+  /* Blue marks which candidate answers the question that was asked. That is
+   * identity, not quality: a weak anchor is still the anchor. */
+  border: 1px solid var(--accent);
+  border-left: 8px solid var(--accent);
+  background: #151a26;
+}
+.cand__stamp {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.35rem;
+}
+.cand__name { font-size: 1.15rem; font-weight: 700; margin-bottom: 0.15rem; }
+.cand--anchor .cand__name { font-size: 1.5rem; }
+.cand__held { font-size: 0.9rem; margin: 0.5rem 0 0.75rem; }
+.cand__held b { font-weight: 600; }
+.cand__p { margin: 0.5rem 0 0.25rem; max-width: 22rem; }
+
+.corrob {
+  border-top: 1px solid var(--rule);
+  margin-top: 0.9rem;
+  padding-top: 0.6rem;
+  font-size: 0.85rem;
+}
+.corrob__counts { font-family: var(--data); }
+.corrob__caveat { color: var(--graphite); font-size: 0.8rem; margin-top: 0.15rem; }
+
+/* q and r are the plan's names for these and stay on the page, but nobody
+ * should have to already know what they mean. */
+.legend { color: var(--graphite); font-size: 0.8rem; margin-top: 0.4rem; }
+
+.toolbar { display: flex; gap: 0.6rem; align-items: center; margin-bottom: 1.25rem; }
+.rail__intro { padding: 0 0.5rem; font-size: 0.8rem; color: var(--graphite); }
+.rail__intro p { margin: 0 0 0.6rem; }
+
+/* -------------------------------------------------------------- tables -- */
+
+.table-wrap { overflow-x: auto; }
+/* Narrow screens scroll the table sideways. Letting it squeeze instead breaks
+ * names mid-word, which for evidence is worse than a scrollbar. */
+table { border-collapse: collapse; width: 100%; min-width: 34rem; font-size: 0.85rem; }
+th, td { text-align: left; padding: 0.35rem 0.6rem 0.35rem 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-weight: 600; font-size: 0.8rem; color: var(--graphite); border-bottom: 1px solid var(--rule-firm); white-space: nowrap; }
+td.num, th.num { text-align: right; font-family: var(--data); font-variant-numeric: tabular-nums; padding-right: 0.9rem; }
+td.data { font-family: var(--data); overflow-wrap: break-word; }
+/* A domain is how a reader judges corroboration, so it never breaks or clips.
+ * The table scrolls sideways before an origin loses a character. */
+td.origin, th.origin { white-space: nowrap; min-width: 12rem; }
+/* URLs are truncated in the middle, keeping the origin and the tail, with the
+ * whole value on the element and a button to take a copy. */
+.urlcell { display: flex; align-items: baseline; gap: 0.4rem; }
+.urlcell__text { font-family: var(--data); }
+.urlcell__copy {
+  font: inherit;
+  font-size: 0.72rem;
+  font-family: var(--text);
+  color: var(--graphite);
+  background: none;
+  border: 1px solid var(--rule-firm);
+  border-radius: 0;
+  padding: 0 0.3rem;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.urlcell__copy:hover { color: var(--ink); border-color: var(--ink); }
+.muted { color: var(--graphite); }
+
+/* "unknown" is a word on purpose. A number here would imply a measurement
+ * nobody made. */
+.unknown { font-style: italic; color: var(--graphite); }
+
+/* --------------------------------------------------------------- rows -- */
+
+/* The rejected list is the strongest thing in the report: a plausible wrong
+ * match, caught and explained. It gets a panel of its own so it does not read
+ * as a footnote to the findings. */
+.rejects { border: 1px solid var(--rule-firm); border-left: 4px solid var(--oxide); background: var(--stock-deep); padding: 0.9rem 1rem; }
+.rejects__lead { font-size: 0.9rem; margin-bottom: 0.6rem; }
+.rejects .row:first-child { padding-top: 0; }
+.reject-near { font-weight: 600; }
+/* A high score that decided nothing has to say so next to the number, or a
+ * reader sees 1.00 under a rejection and stops trusting the page. */
+.row__caveat { font-size: 0.72rem; color: var(--oxide); margin-top: 0.15rem; }
+
+.rows { border-top: 1px solid var(--rule-firm); }
+.row {
+  display: grid;
+  grid-template-columns: 8.5rem minmax(0, 1fr) minmax(0, 18rem);
+  gap: 0.5rem 0.9rem;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+.row__why { font-size: 0.85rem; min-width: 0; }
+.row__ref { font-family: var(--data); font-size: 0.76rem; color: var(--graphite); word-break: break-all; }
+
+/* ------------------------------------------------------------- status -- */
+
+.status { font-family: var(--data); font-size: 0.82rem; }
+.status--failed { color: var(--oxide); font-weight: 700; }
+.status--empty { color: var(--graphite); }
+.status--found { color: var(--ink); }
+/* Not applicable. Neither an answer nor a fault, so neither the oxide of a
+ * failure nor the plain rule of an empty result. */
+.status--skipped { color: var(--graphite); font-style: italic; }
+/* Failed carries a rule down its left edge; empty carries none. The two must
+ * not be distinguishable by colour alone. */
+/* One rule down the left of the row, not one per cell. */
+tr.is-failed td { background: var(--oxide-wash); }
+tr.is-failed td:first-child { box-shadow: inset 4px 0 0 var(--oxide); }
+tr.is-empty td:first-child { box-shadow: inset 4px 0 0 var(--rule-firm); }
+/* A dashed edge, so skipped is distinguishable from empty without relying on
+ * colour, and from failed without relying on wording. */
+tr.is-skipped td { opacity: 0.72; }
+tr.is-skipped td:first-child {
+  box-shadow: inset 4px 0 0 var(--stock);
+  border-left: 4px dashed var(--rule-firm);
+}
+tr.is-running td:first-child { box-shadow: inset 4px 0 0 var(--ink); }
+
+.reason { color: var(--oxide); font-size: 0.82rem; }
+
+.flag {
+  display: inline-block;
+  border: 1px solid var(--oxide);
+  color: var(--oxide);
+  padding: 0 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.flag--quiet { border-color: var(--rule-firm); color: var(--graphite); }
+
+/* ------------------------------------------------------------ details -- */
+
+details.expand { border-top: 1px solid var(--rule-firm); }
+details.expand > summary {
+  cursor: pointer;
+  padding: 0.5rem 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  list-style: none;
+}
+details.expand > summary::-webkit-details-marker { display: none; }
+details.expand > summary::before { content: "+ "; font-family: var(--data); }
+details.expand[open] > summary::before { content: "\2212 "; }
+
+/* -------------------------------------------------------------- picker -- */
+
+.picker { display: grid; gap: 0.5rem; }
+.picker__item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.15rem 0.75rem;
+  text-align: left;
+  font: inherit;
+  background: var(--stock-deep);
+  border: 1px solid var(--rule-firm);
+  border-radius: 0;
+  padding: 0.55rem 0.7rem;
+  cursor: pointer;
+  color: var(--ink);
+}
+.picker__item:hover { background: var(--wash); }
+.picker__item--on { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.picker__title { font-weight: 600; font-size: 0.9rem; }
+.picker__expects { grid-column: 1 / -1; color: var(--graphite); font-size: 0.8rem; }
+
+/* -------------------------------------------------------------- misc --- */
+
+.split { display: grid; grid-template-columns: minmax(0, 20rem) minmax(0, 1fr); gap: var(--gutter); }
+.stack > * + * { margin-top: 1rem; }
+.error { border-left: 3px solid var(--oxide); background: var(--oxide-wash); padding: 0.6rem 0.8rem; font-size: 0.88rem; }
+.empty-state { color: var(--graphite); font-size: 0.9rem; padding: 0.5rem 0; }
+
+.progress-note { font-family: var(--data); font-size: 0.85rem; }
+
+@media (max-width: 860px) {
+  .frame { grid-template-columns: 1fr; }
+  .rail {
+    border-right: 0;
+    border-bottom: 1px solid var(--rule-firm);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    padding-bottom: 0.5rem;
+  }
+  .rail__meta { flex-basis: 100%; }
+  .rail__item { width: auto; border-left: 0; border-bottom: 3px solid transparent; }
+  .rail__item--on { border-left: 0; border-bottom-color: var(--ink); }
+  .split { grid-template-columns: 1fr; }
+  .row { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+/* --------------------------------------------------- verified faces --- */
+/* Only images whose face actually matched the subject appear here. An image
+ * that failed the check, or was never compared, is not shown at all: a
+ * caption cannot undo a photograph, and a stranger's face under a person's
+ * name is the false attribution this system exists to prevent. */
+
+.faces { margin: 0.85rem 0 0.25rem; }
+.faces__strip { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.35rem; }
+.faces__item {
+  display: block;
+  border: 1px solid var(--rule-firm);
+  background: var(--wash);
+  text-decoration: none;
+  color: var(--graphite);
+}
+.faces__item:hover { border-color: var(--accent); }
+.faces__item img {
+  display: block;
+  width: 84px;
+  height: 84px;
+  object-fit: cover;
+  background: var(--wash);
+}
+.faces__score {
+  display: block;
+  font-family: var(--data);
+  font-size: 0.72rem;
+  text-align: center;
+  padding: 0.15rem 0.2rem;
+  border-top: 1px solid var(--rule-firm);
+}

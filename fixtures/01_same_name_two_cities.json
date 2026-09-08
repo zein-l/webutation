@@ -1,0 +1,79 @@
+{
+  "search_metadata": {
+    "id": "fx_01_same_name_two_cities",
+    "status": "Success",
+    "engine": "fixture_people_search",
+    "created_at": "2026-03-12T09:14:22Z"
+  },
+  "search_parameters": {
+    "name": "Michael Petrie"
+  },
+  "results": [
+    {
+      "position": 1,
+      "result_id": "austin-1",
+      "title": "Michael Petrie - Meridian Freight",
+      "link": "https://records.traviscountytx.gov/person/MP-1",
+      "displayed_link": "records.traviscountytx.gov/person/MP-1",
+      "snippet": "Operations lead in logistics, based in Austin.",
+      "publisher": "records.traviscountytx.gov",
+      "access": "PUBLIC_WEB",
+      "lineage": {
+        "origin": "travis_county_clerk",
+        "state": "known_origin"
+      },
+      "evidence": {
+        "kind": "direct_observation"
+      },
+      "fields": {
+        "full_name": "Michael Petrie",
+        "city": "Austin, TX"
+      },
+      "record_date": "2021-06-02"
+    },
+    {
+      "position": 2,
+      "result_id": "austin-2",
+      "title": "Michael Petrie | Operations",
+      "link": "https://www.linkedin.com/in/michael-petrie-atx",
+      "displayed_link": "www.linkedin.com/in/michael-petrie-atx",
+      "snippet": "Logistics operations manager, Austin.",
+      "publisher": "linkedin.com",
+      "access": "PUBLIC_WEB",
+      "lineage": {
+        "origin": "linkedin",
+        "state": "known_origin"
+      },
+      "evidence": {
+        "kind": "self_reported"
+      },
+      "fields": {
+        "profile_name": "Michael Petrie",
+        "location": "Austin, TX",
+        "current_employer": "Meridian Freight"
+      }
+    },
+    {
+      "position": 3,
+      "result_id": "boston-1",
+      "title": "Michael Petrie - Cardiology",
+      "link": "https://www.massgeneral.example/staff/mpetrie",
+      "displayed_link": "www.massgeneral.example/staff/mpetrie",
+      "snippet": "Consultant cardiologist at a Boston teaching hospital.",
+      "publisher": "massgeneral.example",
+      "access": "PUBLIC_WEB",
+      "lineage": {
+        "origin": "mass_general",
+        "state": "known_origin"
+      },
+      "evidence": {
+        "kind": "direct_observation"
+      },
+      "fields": {
+        "full_name": "Michael Petrie",
+        "city": "Boston, MA"
+      },
+      "record_date": "2023-01-11"
+    }
+  ]
+}

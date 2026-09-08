@@ -1,0 +1,61 @@
+{
+  "search_metadata": {
+    "id": "fx_04_conflicting_birth_dates",
+    "status": "Success",
+    "engine": "fixture_people_search",
+    "created_at": "2026-03-12T09:14:22Z"
+  },
+  "search_parameters": {
+    "name": "Michael Petrie"
+  },
+  "results": [
+    {
+      "position": 1,
+      "result_id": "clerk",
+      "title": "Michael Petrie - County Records",
+      "link": "https://records.traviscountytx.gov/person/MP-9",
+      "displayed_link": "records.traviscountytx.gov/person/MP-9",
+      "snippet": "Recorded filing, Austin TX.",
+      "publisher": "records.traviscountytx.gov",
+      "access": "PUBLIC_WEB",
+      "lineage": {
+        "origin": "travis_county_clerk",
+        "state": "known_origin"
+      },
+      "evidence": {
+        "kind": "direct_observation"
+      },
+      "fields": {
+        "full_name": "Michael Petrie",
+        "city": "Austin, TX",
+        "date_of_birth": "04/02/1979",
+        "email": "mp@example.com"
+      },
+      "record_date": "2019-04-02"
+    },
+    {
+      "position": 2,
+      "result_id": "aggregator",
+      "title": "Michael Petrie Public Records",
+      "link": "https://www.spokeo.com/Michael-Petrie/Texas/Austin",
+      "displayed_link": "www.spokeo.com/Michael-Petrie/Texas/Austin",
+      "snippet": "Found records for Michael Petrie in Austin, TX.",
+      "publisher": "spokeo.com",
+      "access": "LICENSED",
+      "lineage": {
+        "origin": "spokeo",
+        "state": "known_origin"
+      },
+      "evidence": {
+        "kind": "republished"
+      },
+      "fields": {
+        "full_name": "Michael Petrie",
+        "city": "Austin, TX",
+        "date_of_birth": "11/30/1981",
+        "email": "mp@example.com"
+      },
+      "record_date": "2025-08-14"
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "search_metadata": {
+    "id": "fx_07_no_suitable_candidate",
+    "status": "Success",
+    "engine": "fixture_people_search",
+    "created_at": "2026-03-12T09:14:22Z"
+  },
+  "search_parameters": {
+    "name": "Michael Petrie"
+  },
+  "results": [
+    {
+      "position": 1,
+      "result_id": "other-1",
+      "title": "Marcus Webb - Britannica",
+      "link": "https://www.britannica.com/biography/marcus-webb",
+      "displayed_link": "www.britannica.com/biography/marcus-webb",
+      "snippet": "An unrelated biography.",
+      "publisher": "britannica.com",
+      "access": "PUBLIC_WEB",
+      "lineage": {
+        "origin": "britannica",
+        "state": "known_origin"
+      },
+      "evidence": {
+        "kind": "secondhand"
+      },
+      "fields": {
+        "full_name": "Marcus Webb",
+        "city": "London"
+      },
+      "record_date": "2020-05-01"
+    },
+    {
+      "position": 2,
+      "result_id": "other-2",
+      "title": "Susan Calvin - Robotics",
+      "link": "https://www.example.org/people/susan-calvin",
+      "displayed_link": "www.example.org/people/susan-calvin",
+      "snippet": "Unrelated researcher profile.",
+      "publisher": "example.org",
+      "access": "PUBLIC_WEB",
+      "lineage": {
+        "origin": "example_org",
+        "state": "known_origin"
+      },
+      "evidence": {
+        "kind": "unknown"
+      },
+      "fields": {
+        "full_name": "Susan Calvin",
+        "city": "New York, NY"
+      }
+    }
+  ]
+}

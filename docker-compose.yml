@@ -1,0 +1,16 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: webutation-db
+    environment:
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: webutation
+    ports:
+      # Host 5434: a pre-existing PostgreSQL 17 service owns 5432 on this
+      # machine. The container still listens on 5432 internally.
+      - "5434:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

@@ -1,0 +1,18 @@
+fastapi
+uvicorn
+python-multipart
+httpx
+sqlalchemy
+psycopg2-binary
+pgvector
+python-dotenv
+requests
+pytest
+
+# Face verification. Heavy, and only needed when --photo-url is used:
+# app/engine/faces.py imports them lazily so the rest of the system runs
+# without them. buffalo_l downloads on first use (~300MB).
+insightface
+onnxruntime
+numpy
+opencv-python-headless
