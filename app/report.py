@@ -156,8 +156,8 @@ def _others_summary(candidates: list[dict]) -> dict[str, Any]:
         label = plural(total, "record whose face did not match",
                        "records whose faces did not match")
     elif unmatched == total and total:
-        label = plural(total, "other record that did not match",
-                       "other records that did not match")
+        label = plural(total, "other record that did not match the subject",
+                       "other records that did not match the subject")
     else:
         parts = []
         if same_name:
@@ -165,7 +165,7 @@ def _others_summary(candidates: list[dict]) -> dict[str, Any]:
         if no_face:
             parts.append(f"{no_face} whose face did not match")
         if unmatched:
-            parts.append(f"{unmatched} that matched on nothing")
+            parts.append(f"{unmatched} that matched the subject on nothing")
         label = plural(total, "other candidate", "other candidates")
         if parts:
             label += " — " + ", ".join(parts)

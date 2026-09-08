@@ -277,4 +277,48 @@ def test_a_mixed_heading_shows_the_split() -> None:
     label = _others_summary(mixed)["label"]
     assert label.startswith("116 other candidates")
     assert "37 sharing this name" in label
-    assert "79 that matched on nothing" in label
+    assert "79 that matched the subject on nothing" in label
+
+
+def test_the_heading_says_what_was_not_matched() -> None:
+    """"79 that matched on nothing" read as a fact about the records.
+
+    A reader took it to mean those records carry no attributes, rather than
+    that they failed every comparison against the subject. The subject is named
+    where the phrase would otherwise be about the record itself.
+    """
+    from app.report import _others_summary
+
+    mixed = (
+        [{"is_anchor": False, "stamp": "Other person, same name"}] * 37
+        + [{"is_anchor": False, "stamp": "Other record, not matched"}] * 79
+    )
+    label = _others_summary(mixed)["label"]
+    assert "79 that matched the subject on nothing" in label
+    assert "matched on nothing" not in label.replace("matched the subject on nothing", "")
+
+    only_unmatched = [{"is_anchor": False, "stamp": "Other record, not matched"}] * 12
+    assert _others_summary(only_unmatched)["label"] == (
+        "12 other records that did not match the subject"
+    )
+
+
+def test_the_face_wording_stays_short() -> None:
+    """A face match has one obvious counterpart, so naming it adds nothing.
+
+    Spelling out the subject in every clause made a three-way label repeat it
+    twice. The phrase that needed it was the one that read as a property of the
+    record.
+    """
+    from app.report import _others_summary
+
+    faces = [{"is_anchor": False, "stamp": "Other record, no face match"}] * 59
+    assert _others_summary(faces)["label"] == "59 records whose faces did not match"
+
+    three_way = (
+        [{"is_anchor": False, "stamp": "Other person, same name"}] * 2
+        + [{"is_anchor": False, "stamp": "Other record, no face match"}] * 3
+        + [{"is_anchor": False, "stamp": "Other record, not matched"}] * 4
+    )
+    label = _others_summary(three_way)["label"]
+    assert label.count("the subject") == 1, label
