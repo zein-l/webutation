@@ -11,11 +11,21 @@ cache/
 uploads/
 
 # Loose images at the repo root: subject photographs handed to the pipeline,
-# and screenshots, which have carried an API key in a visible command line.
+# and screenshots.
 /*.png
 /*.jpg
 /*.jpeg
 /*.webp
+
+# Screenshots anywhere, not just at the root. One of these was found holding a
+# live SerpAPI key in a visible command line, so they are excluded by name
+# wherever they land rather than only where they happened to be that day.
+# Deliberately not a blanket **/*.png: the frontend may legitimately need an
+# icon, and an ignore rule that blocks real assets gets deleted wholesale.
+Screenshot*
+screenshot*
+Screen Shot*
+*.screenshot.*
 
 # --- model weights -------------------------------------------------------
 # buffalo_l is ~300MB and is baked into the Docker image at build time.
