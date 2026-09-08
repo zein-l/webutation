@@ -51,6 +51,11 @@ __pycache__/
 htmlcov/
 *.egg-info/
 
+# --- working notes -------------------------------------------------------
+# The challenge brief and build plan. Working material, not part of the
+# deliverable, and it names people at the company the work was done for.
+webutation-challenge-plan*.md
+
 # --- editors and os ------------------------------------------------------
 .DS_Store
 Thumbs.db
