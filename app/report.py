@@ -123,25 +123,61 @@ def _freshness(item) -> str | float:
 
 
 def _plain_basis(candidate: CandidateDraft) -> str:
-    """What holds this candidate together, in words a reviewer would use."""
-    parts: list[str] = []
+    """What holds this candidate together, in words a reviewer would use.
+
+    For an anchor this is a union across its records, and it now says so. It
+    used to read "face match 0.99, name, context", which is the grammar of a
+    conjunction: one record that matched on all three. No record did. The face
+    came from a single page with no context agreement at all, and every record
+    that agreed on context had no face to compare. A reader was being shown the
+    best of each column and left to assume they described one thing.
+
+    The wording separates the two cases. When one record does carry every
+    signal, that is worth saying plainly. When the evidence is spread, the
+    count says how thinly.
+    """
     if candidate.is_anchor:
-        best_face = max(
-            (m.face_signal for m in candidate.anchor_matches.values() if m.face_signal),
-            default=None,
-        )
+        matches = list(candidate.anchor_matches.values())
+        if not matches:
+            return "matched the subject"
+
+        best_face = max((m.face_signal for m in matches if m.face_signal), default=None)
+        present: list[tuple[str, str]] = []
         if best_face is not None:
-            parts.append(f"face match {best_face:.2f}")
-        if any(m.name_signal for m in candidate.anchor_matches.values()):
-            parts.append("name")
-        if any(m.context_signal for m in candidate.anchor_matches.values()):
-            parts.append("context")
-        # Without this the card said "Held by: name" for a candidate that was
-        # admitted on the locality — announcing as its basis the one thing the
-        # system refuses to treat as evidence.
-        if any(m.locality_signal for m in candidate.anchor_matches.values()):
-            parts.append("locality")
-        return ", ".join(parts) or "matched the subject"
+            present.append(("face", f"a face match at {best_face:.2f}"))
+        if any(m.name_signal for m in matches):
+            present.append(("name", "the name"))
+        if any(m.context_signal for m in matches):
+            present.append(("context", "context"))
+        # Announced explicitly: without it a candidate admitted on its locality
+        # reported "name" as its basis, crediting the one signal this system
+        # refuses to treat as evidence of identity.
+        if any(m.locality_signal for m in matches):
+            present.append(("locality", "locality"))
+
+        if not present:
+            return "matched the subject"
+
+        def carries(match, kind: str) -> bool:
+            return bool(getattr(match, f"{kind}_signal", None))
+
+        kinds = [kind for kind, _ in present]
+        together = sum(
+            1 for m in matches if all(carries(m, kind) for kind in kinds)
+        )
+        phrases = [phrase for _, phrase in present]
+        if len(phrases) == 1:
+            joined = phrases[0]
+        else:
+            joined = ", ".join(phrases[:-1]) + " and " + phrases[-1]
+
+        if len(matches) == 1:
+            return f"one record, on {joined}"
+        if together:
+            return (
+                f"{joined} — all of it on {together} of {len(matches)} records"
+            )
+        return f"{joined}, spread across {len(matches)} records — no one record has all of it"
 
     spoken = {
         "distinctive_attribute": "a shared email, phone or identifier",

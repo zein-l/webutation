@@ -55,6 +55,53 @@ _IPV4 = re.compile(r"^\d{1,3}(\.\d{1,3}){3}$")
 _TITLE_SEPARATORS: tuple[str, ...] = (" - ", " – ", " — ", " | ", " · ", " :: ")
 
 
+#: A JSON escape that arrived already escaped. SerpAPI encodes "=" as \\u003d
+#: inside strings that are themselves JSON-encoded, so one round of decoding
+#: leaves the six characters behind rather than the character they name. 252
+#: URLs in a single live run were unusable for this reason, one of them on a
+#: record the report had put in the anchor.
+_JSON_ESCAPE = re.compile(r"\\u([0-9a-fA-F]{4})")
+
+#: Google redirect stubs. A result whose link is one of these names no page:
+#: the destination is a protobuf payload that cannot be resolved without
+#: Google's own service, so there is nothing to fetch, nothing to show a
+#: reader, and no identity to key a record on.
+_REDIRECT_STUBS = ("/goto?url=", "/url?", "google.com/url?")
+
+
+def unescape_json_escapes(value: str) -> str:
+    """Turn a literal \\uXXXX back into the character it names."""
+    return _JSON_ESCAPE.sub(lambda m: chr(int(m.group(1), 16)), value)
+
+
+def is_redirect_stub(url: str) -> bool:
+    """Whether this link is a redirect wrapper rather than a page."""
+    lowered = url.lower()
+    return any(stub in lowered for stub in _REDIRECT_STUBS)
+
+
+def clean_link(raw: object) -> str | None:
+    """The page this result points at, or None when it does not point at one.
+
+    Two failures, both from the same field. A link may arrive with its escapes
+    intact, which yields a URL nobody can follow. And a link may be a Google
+    redirect stub, which is not a URL for a page at all — it identifies a click,
+    not a document, and two stubs for one page differ.
+
+    That second case is what let four wrapped copies of pages already in an
+    anchor escape deduplication, since deduplication keys on the link. Worse,
+    Google returns a different snippet per result row, so the same page was
+    scored at two strengths: the CLM listing at 1.00 and 0.79, the subject's
+    RocketReach page at 0.91 and 0.70.
+    """
+    if not isinstance(raw, str):
+        return None
+    cleaned = unescape_json_escapes(raw).strip()
+    if not cleaned or is_redirect_stub(cleaned):
+        return None
+    return cleaned
+
+
 def registrable_domain(url: str | None) -> str | None:
     """The registrable domain of a URL: linkedin.com, not the full address.
 
@@ -161,6 +208,33 @@ class SerpApiConfig:
     disabled_engines: frozenset[str] = frozenset({"yandex_images"})
 
 
+def _publisher_name(result: Mapping, domain: str | None) -> str | None:
+    """Who published this, as a name rather than an address.
+
+    SerpAPI's ``source`` is usually a label — "LinkedIn", "Claims and Litigation
+    Management Alliance" — but on some result types it is a full URL. Stored
+    verbatim, every distinct URL counted as a distinct publisher: one live run
+    held 72 such assertions, and the corroboration summary reported the
+    inflated total to a reader as though several outlets had spoken.
+
+    A URL is reduced to its registrable domain, which is what it was standing
+    in for. A label is kept, because "Claims and Litigation Management
+    Alliance" tells a reviewer more than theclm.org does.
+    """
+    for key in ("source", "source_name"):
+        value = result.get(key)
+        if not isinstance(value, str) or not value.strip():
+            continue
+        value = unescape_json_escapes(value).strip()
+        if "://" in value or value.lower().startswith("www."):
+            reduced = registrable_domain(value)
+            if reduced:
+                return reduced
+            continue
+        return value
+    return domain
+
+
 def _display_name(title: str | None, config: SerpApiConfig) -> str | None:
     """The leading segment of a page title.
 
@@ -247,7 +321,7 @@ class _SerpApiAdapter:
         carries no link, a hash of the block itself is stable across repeat
         collections of identical bytes and unique within the response.
         """
-        link = result.get("link") or result.get("source_page")
+        link = clean_link(result.get("link")) or clean_link(result.get("source_page"))
         if link:
             return f"{self.name}:{link}"
         blob = json.dumps(result, sort_keys=True, ensure_ascii=True, default=str)
@@ -298,10 +372,10 @@ class _SerpApiAdapter:
         self, result: Mapping, index: int, *, image_keys: tuple[str, ...] = ()
     ) -> list[AssertionDraft]:
         """The three things a result structurally contains, and nothing more."""
-        link = result.get("link") or result.get("source_page")
+        link = clean_link(result.get("link")) or clean_link(result.get("source_page"))
         domain = registrable_domain(link)
         record_ref = self._record_ref(result, index)
-        publisher = result.get("source") or result.get("source_name") or domain
+        publisher = _publisher_name(result, domain)
 
         common = {
             "record_ref": record_ref,
@@ -357,15 +431,34 @@ class _SerpApiAdapter:
         """Results this engine returns, paired with their image fields."""
         blocks: list[tuple[Mapping, tuple[str, ...]]] = []
         for result in payload.get("organic_results") or []:
-            if isinstance(result, Mapping):
+            if isinstance(result, Mapping) and not self._is_unresolvable(result):
                 blocks.append((result, ("thumbnail",)))
         # Inline images carry a thumbnail, an original, and the page they were
         # found on. All three matter: the images feed face comparison later and
         # the page is the publisher that showed them.
         for result in payload.get("inline_images") or []:
-            if isinstance(result, Mapping):
+            if isinstance(result, Mapping) and not self._is_unresolvable(result):
                 blocks.append((result, ("original", "thumbnail")))
         return blocks
+
+    @staticmethod
+    def _is_unresolvable(result: Mapping) -> bool:
+        """Whether this result claims a link that goes nowhere a reader can go.
+
+        A result with no link at all is kept: it is identified by a hash of its
+        own bytes and is honest about having no page. A result whose link is a
+        redirect stub is different — it asserts a destination and then does not
+        name one, and every row Google wraps this way in one response is a
+        different string for the same page.
+
+        Dropping it rather than keeping it unlinked is the conservative choice
+        in the direction this system cares about: an unresolvable row cannot be
+        checked by a reader, and in the run that prompted this every one of
+        them duplicated a page already collected directly. The cost is a page
+        reachable only through a wrapper, which would be lost.
+        """
+        raw = result.get("link") or result.get("source_page")
+        return isinstance(raw, str) and bool(raw.strip()) and clean_link(raw) is None
 
     def normalize(self, raw: RawResponse) -> list[AssertionDraft]:
         """Parse a response into drafts. No network, no snippet parsing."""

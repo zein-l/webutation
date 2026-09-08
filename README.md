@@ -206,6 +206,31 @@ caller who typed "Webutation" and 0.17 for one who typed "Webutation, private
 investigator, insurance fraud, OSINT". The saturation value is set by precedent
 rather than measurement; see the note on `anchor_context_saturation`.
 
+**Present a union as though it were a conjunction.** An anchor's basis line
+used to read "face match 0.99, name, context", which is the grammar of one
+record that matched on all three. No record had: the face came from a single
+page with no context agreement at all, and every record that agreed on context
+had no face to compare. It now says whether the evidence sits in one record or
+is spread, and across how many — "spread across 13 records, no one record has
+all of it" is a different claim from the one a reader was making before.
+
+**Trust a link it has not cleaned.** Search responses arrive with escapes
+intact (`?id=11376`, which no browser will follow) and with Google
+redirect stubs (`/goto?url=CAES…`) that name a click rather than a page. The
+stubs are worse than cosmetic: record identity keys on the link, so every
+wrapped copy of a page escaped deduplication and was scored again — in one run
+the same page appeared in an anchor at two different strengths, because Google
+returns a different snippet per result row. Escapes are decoded; stubs are
+dropped, because a record whose destination cannot be resolved cannot be
+checked by a reader.
+
+**Count a URL as a publisher.** `publisher` took whatever the source field
+held, which on some result types is a full URL. Each distinct URL then counted
+as a distinct publisher, and the corroboration summary reported the inflated
+total. A URL is reduced to its registrable domain; a real name is kept, because
+"Claims and Litigation Management Alliance" tells a reviewer more than
+theclm.org does.
+
 **Anchor on a trade.** Context alone never admits a record. A name is a label
 many people share and cannot admit on its own; a profession is a label far more
 people share. A subject who supplies only context therefore gets no anchor at
