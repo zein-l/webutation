@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Gauge from "./Gauge.jsx";
+import Source from "./Source.jsx";
 
 /* One hypothesised person, with everything that holds them together.
  *
@@ -255,7 +256,7 @@ export default function Candidate({ candidate, compared }) {
                       <> <span className="flag">more than one face</span></>
                     )}
                   </div>
-                  <div className="row__ref">{m.record_ref}</div>
+                  <Source source={m.source} fallbackRef={m.record_ref} />
                 </div>
               ))}
             </div>

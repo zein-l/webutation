@@ -451,3 +451,13 @@ details.expand[open] > summary::before { content: "\2212 "; }
   padding: 0.15rem 0.2rem;
   border-top: 1px solid var(--rule-firm);
 }
+
+/* A record with no link shows what it was called instead of its internal
+   identity. The title is the substance; the note explains the absence. */
+.row__title {
+  color: var(--ink, inherit);
+}
+.row__note {
+  opacity: 0.65;
+  font-style: italic;
+}

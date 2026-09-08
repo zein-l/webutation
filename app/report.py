@@ -122,6 +122,16 @@ def _freshness(item) -> str | float:
     return round(float(item.components["freshness"]), 4)
 
 
+def _first_name_for(candidate: CandidateDraft, ref: str) -> str | None:
+    """The name one record of this candidate carried, for display."""
+    for assertion in candidate.assertions:
+        if assertion.record_ref == ref and assertion.predicate == "name":
+            value = assertion.raw_value or assertion.normalized_value
+            if value:
+                return value
+    return None
+
+
 def _plain_basis(candidate: CandidateDraft, subject: Query | None = None) -> str:
     """What holds this candidate together, in words a reviewer would use.
 
@@ -338,6 +348,7 @@ def _serialise_candidate(
         "anchored_by": [
             {
                 "record_ref": ref,
+                "source": record_source(ref, _first_name_for(candidate, ref)),
                 "strength": round(match.strength, 4),
                 "basis": match.basis,
                 "face": None if match.face_signal is None else round(match.face_signal, 4),
@@ -353,7 +364,46 @@ def _serialise_candidate(
     }
 
 
-def _rejection(ref: str, match, config: FormationConfig) -> dict[str, Any]:
+def record_source(ref: str, title: str | None = None) -> dict[str, Any]:
+    """What to show for a record: where it is, or failing that, what it was.
+
+    A record reference is an internal identity, and for a result the source
+    returned without a URL it is a hash of the result's own bytes —
+    ``serpapi:google:sha256:0f085f7e010adeb4:10``. That is a sound identity and
+    an appalling thing to put in front of a reader, who cannot tell it from a
+    bug. The reference is still carried for tracing; this is what gets shown.
+
+    ``url`` is None exactly when the source supplied no link, which the caller
+    should say rather than leave as a blank.
+    """
+    parts = ref.split(":", 2)
+    rest = parts[2] if len(parts) == 3 else ref
+    url = None if rest.startswith("sha256:") else rest
+    return {
+        "url": url,
+        "title": (title or "").strip() or None,
+        # Said plainly, because "no link" is a fact about the source rather
+        # than something that went wrong here.
+        "note": None if url else "no link supplied by the source",
+    }
+
+
+def _titles_by_ref(formation: CandidateFormation) -> dict[str, str]:
+    """The first name each record carried, for records with nothing else to show."""
+    titles: dict[str, str] = {}
+    for candidate in formation.candidates:
+        for assertion in candidate.assertions:
+            if assertion.predicate != "name" or not assertion.record_ref:
+                continue
+            value = assertion.raw_value or assertion.normalized_value
+            if value:
+                titles.setdefault(assertion.record_ref, value)
+    return titles
+
+
+def _rejection(
+    ref: str, match, config: FormationConfig, title: str | None = None
+) -> dict[str, Any]:
     """Why one record is not the subject, phrased so the score cannot mislead.
 
     Two different decisions land here and they must not read alike. Most
@@ -407,6 +457,7 @@ def _rejection(ref: str, match, config: FormationConfig) -> dict[str, Any]:
 
     return {
         "record_ref": ref,
+        "source": record_source(ref, title),
         "strength": round(match.strength, 4),
         "threshold": config.anchor_threshold,
         "decided_by": decided_by,
@@ -522,13 +573,21 @@ def build_report(
     for candidate in formation.candidates:
         anchored_refs.update(candidate.anchor_matches)
     config = FormationConfig()
+    titles = _titles_by_ref(formation)
     rejected = [
-        _rejection(ref, match, config)
+        _rejection(ref, match, config, titles.get(ref))
         for ref, match in formation.anchor_matches.items()
         if ref not in anchored_refs
     ]
-    # Threshold rejections first, closest to the line at the top. The
-    # high-scoring substance rejections are a different question and follow.
+    # Two populations, and they are not comparable on the number. A record
+    # refused by the threshold is ranked by how close it came; a record refused
+    # on substance scored high and the score decided nothing, so 1.00 there
+    # means less than 0.40 does above. Sorting them into one list and calling
+    # it "closest first" was a contradiction a reader could see: entries at
+    # 0.00 sat above entries at 1.00.
+    #
+    # They stay grouped, ordered by score within each group, and the view
+    # labels the groups rather than implying one ranking runs through both.
     rejected.sort(key=lambda r: (r["decided_by"] == "substance", -r["strength"]))
 
     return {

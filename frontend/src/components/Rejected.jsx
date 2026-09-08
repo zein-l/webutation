@@ -1,4 +1,5 @@
 import Gauge from "./Gauge.jsx";
+import Source from "./Source.jsx";
 
 /* Records that did not match the subject.
  *
@@ -25,7 +26,7 @@ function Reject({ r, lead }) {
         {notDecisive && <div className="row__caveat">score not decisive</div>}
       </div>
       <div className="row__why">{r.explanation}</div>
-      <div className="row__ref">{r.record_ref}</div>
+      <Source source={r.source} fallbackRef={r.record_ref} />
     </div>
   );
 }
@@ -41,9 +42,16 @@ export default function Rejected({ rejected, collected }) {
     );
   }
 
-  const near = rejected.slice(0, 8);
-  const rest = rejected.slice(8);
-  const onSubstance = rejected.filter((r) => r.decided_by === "substance").length;
+  // Two populations, and one ranking does not run through both. A record
+  // refused by the threshold is ranked by how close it came. A record refused
+  // on substance scored high and the score decided nothing, so 1.00 there
+  // means less than 0.40 does above it. Presented as a single list called
+  // "closest first", entries at 0.00 sat above entries at 1.00 and the section
+  // contradicted itself on screen. They are labelled instead.
+  const byThreshold = rejected.filter((r) => r.decided_by !== "substance");
+  const onSubstance = rejected.filter((r) => r.decided_by === "substance");
+  const near = byThreshold.slice(0, 8);
+  const rest = byThreshold.slice(8);
 
   return (
     <>
@@ -52,21 +60,22 @@ export default function Rejected({ rejected, collected }) {
           {rejected.length === 1
             ? "One record looked like the subject and was not."
             : `${rejected.length} records looked like the subject and were not.`}{" "}
-          Kept and scored rather than discarded, closest first.
+          Kept and scored rather than discarded.
         </p>
-        {onSubstance > 0 && (
-          <p className="note" style={{ marginBottom: "0.6rem" }}>
-            {onSubstance === 1 ? "One of them scores" : `${onSubstance} of them score`}{" "}
-            high on the name alone. With nothing else to check it against, that
-            score is the name similarity and nothing more, so it was not what
-            decided them.
-          </p>
+
+        {byThreshold.length > 0 && (
+          <>
+            <p className="note" style={{ marginBottom: "0.6rem" }}>
+              {byThreshold.length === 1 ? "One scored" : `${byThreshold.length} scored`}{" "}
+              below the threshold, closest first.
+            </p>
+            <div className="rows">
+              {near.map((r, i) => (
+                <Reject r={r} lead={i === 0} key={r.record_ref} />
+              ))}
+            </div>
+          </>
         )}
-        <div className="rows">
-          {near.map((r, i) => (
-            <Reject r={r} lead={i === 0} key={r.record_ref} />
-          ))}
-        </div>
       </div>
 
       {rest.length > 0 && (
@@ -76,6 +85,23 @@ export default function Rejected({ rejected, collected }) {
             {rest.map((r) => <Reject r={r} key={r.record_ref} />)}
           </div>
         </details>
+      )}
+
+      {onSubstance.length > 0 && (
+        <div className="rejects" style={{ marginTop: "1rem" }}>
+          <p className="note" style={{ marginBottom: "0.6rem" }}>
+            {onSubstance.length === 1
+              ? "One record was refused on substance, not on its score."
+              : `${onSubstance.length} records were refused on substance, not on their scores.`}{" "}
+            They score high on the name alone, and with nothing else to check
+            that against the number is the name similarity and nothing more. It
+            is shown, and it is not what decided them — so these are not ranked
+            against the ones above.
+          </p>
+          <div className="rows">
+            {onSubstance.map((r) => <Reject r={r} key={r.record_ref} />)}
+          </div>
+        </div>
       )}
     </>
   );
