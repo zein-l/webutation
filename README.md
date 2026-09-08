@@ -360,12 +360,22 @@ person looked, not that every claim was accepted.
   about the individual rather than the category separates them: a face, an
   email, a phone number. This is the cost of making context admit at all, and it
   is a deliberate trade against the false negatives described below.
-- **Yandex reverse image search is off by default.** It refuses photo URLs
-  served from a development tunnel — "the URL does not refer to an image, or the
-  image is not publicly accessible" — while Google Lens fetches the same URL
-  without complaint. Since failures are no longer cached, leaving it enabled
-  buys that refusal on every run. It has different recall from Lens and is worth
-  having: re-enable it after deploying to a real domain, where the rejection may
-  not apply, with `SerpApiConfig(disabled_engines=frozenset())`.
+- **Yandex reverse image search is off by default, and a real domain does not
+  fix it.** It answers every reverse image search with "the URL does not refer
+  to an image, or the image is not publicly accessible", while Google Lens
+  fetches the same URL without complaint. This was first seen through a
+  development tunnel and attributed to the tunnel; that was wrong. Tested
+  against the deployed `onrender.com` domain, on a URL confirmed to return
+  `200 image/png` one second before the call, Yandex gave the same refusal. The
+  host was never the cause.
+
+  A hypothesis, not a finding: the upload URL carries a signed query string
+  (`?expires=…&token=…`), and Yandex may want a bare image URL. That has not
+  been tested — it costs a live search to find out, and the test would have to
+  publish an unsigned, unexpiring URL to a photograph of a real person, which
+  is the one thing the upload design refuses to do. Whatever the cause, since
+  failures are no longer cached, leaving Yandex enabled buys the refusal on
+  every run. It has different recall from Lens and is worth having if someone
+  works out why: `SerpApiConfig(disabled_engines=frozenset())` turns it back on.
 - **`observed_at` is usually null** on web results, so most claims correctly
   report unknown freshness.

@@ -140,15 +140,24 @@ class SerpApiConfig:
     #:
     #: Yandex is off because it will not fetch this deployment's photo URL. It
     #: answers every reverse image search with "The URL does not refer to an
-    #: image, or the image is not publicly accessible" — a fact about serving
-    #: uploads through a development tunnel, not about the photograph, which
-    #: Google Lens fetches from the same URL without complaint. Since failures
-    #: are no longer cached, leaving it on buys that same refusal on every run.
+    #: image, or the image is not publicly accessible", while Google Lens
+    #: fetches the same URL without complaint.
+    #:
+    #: This was first seen through a development tunnel and blamed on the
+    #: tunnel. That was wrong: tested against the deployed onrender.com domain,
+    #: on a URL confirmed to return 200 image/png one second earlier, Yandex
+    #: gave the same refusal. The host was never the cause.
+    #:
+    #: Untested hypothesis: the URL carries a signed query string
+    #: (?expires=…&token=…) and Yandex may want a bare image URL. Finding out
+    #: costs a live search, and the test would mean publishing an unsigned,
+    #: unexpiring URL to a photograph of a real person — which is the one thing
+    #: the upload design exists to refuse. Since failures are no longer cached,
+    #: leaving it on buys the refusal on every run.
     #:
     #: This is a deployment judgement, not a verdict on the source: Yandex has
-    #: different recall from Lens and is worth having. Re-enable it once the
-    #: uploads are served from a real domain, where the refusal may not apply,
-    #: by passing ``disabled_engines=frozenset()``.
+    #: different recall from Lens and is worth having if someone works out why.
+    #: ``disabled_engines=frozenset()`` turns it back on.
     disabled_engines: frozenset[str] = frozenset({"yandex_images"})
 
 

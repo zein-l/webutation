@@ -25,6 +25,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 
 from app.cache import IMAGE_USER_AGENT
+from app.meminfo import memory_report
 from app.ratelimit import GUARD, client_key
 from app.report import ADAPTERS, available_fixtures, get_run, start_run
 from app.uploads import (
@@ -245,6 +246,10 @@ def health() -> dict:
         "photos_stored": len(stored_uploads()),
         # So an operator can see the budget without reading the logs.
         "limits": limits,
+        # Peak resident size against the container's ceiling. Reported because
+        # a run that vanishes looks the same whether the process crashed, was
+        # redeployed, or was killed for memory, and only this tells them apart.
+        "memory": memory_report(),
     }
 
 
