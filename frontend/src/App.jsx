@@ -67,9 +67,13 @@ export default function App() {
 
   // Name what actually separated them. With no name supplied there was no name
   // comparison, and claiming one would describe a check that never ran.
+  // Reads the same report.compared the cards do. These two used to derive the
+  // wording separately and drifted: the summary said "records whose faces did
+  // not match" while every card beneath it said "Other person, same name".
   const separatedBy = (n) => {
-    if (run?.subject?.name) return `${n} other ${n === 1 ? "person" : "people"} sharing this name`;
-    if (run?.subject?.photo_url || run?.face?.available)
+    const compared = run?.report?.compared;
+    if (compared?.name) return `${n} other ${n === 1 ? "person" : "people"} sharing this name`;
+    if (compared?.face)
       return `${n} ${n === 1 ? "record whose face did not match" : "records whose faces did not match"}`;
     return `${n} other ${n === 1 ? "record" : "records"} that did not match`;
   };
@@ -183,11 +187,13 @@ export default function App() {
                     failure.
                   </p>
                 )}
-                {anchor && <Candidate candidate={anchor} />}
+                {anchor && <Candidate candidate={anchor} compared={report.compared} />}
                 {others.length > 0 && (
                   <details className="expand">
                     <summary>{separatedBy(others.length)}</summary>
-                    {others.map((c) => <Candidate candidate={c} key={c.index} />)}
+                    {others.map((c) => (
+                      <Candidate candidate={c} key={c.index} compared={report.compared} />
+                    ))}
                   </details>
                 )}
               </Section>

@@ -122,7 +122,7 @@ def _freshness(item) -> str | float:
     return round(float(item.components["freshness"]), 4)
 
 
-def _plain_basis(candidate: CandidateDraft) -> str:
+def _plain_basis(candidate: CandidateDraft, subject: Query | None = None) -> str:
     """What holds this candidate together, in words a reviewer would use.
 
     For an anchor this is a union across its records, and it now says so. It
@@ -179,6 +179,21 @@ def _plain_basis(candidate: CandidateDraft) -> str:
             )
         return f"{joined}, spread across {len(matches)} records — no one record has all of it"
 
+    basis = candidate.grouping_basis.value
+
+    # A photo-only search supplies no name, so no name was ever compared. The
+    # grouping basis still reads "name_only", because that describes how the
+    # records were clustered — by their own name keys, against each other —
+    # and not what the subject was matched on. Rendered as "a shared name
+    # only" it claimed a comparison that never happened, and contradicted the
+    # rejection list, which correctly said every one of these was decided on
+    # face similarity.
+    if not getattr(subject, "name", None) and basis in {"name_only", "name_and_locality"}:
+        records = len({a.record_ref for a in candidate.assertions if a.record_ref})
+        if records <= 1:
+            return "a single record, matched against nothing"
+        return f"{records} records that share a name with each other"
+
     spoken = {
         "distinctive_attribute": "a shared email, phone or identifier",
         "face": "a face match",
@@ -186,7 +201,7 @@ def _plain_basis(candidate: CandidateDraft) -> str:
         "name_only": "a shared name only",
         "unspecified": "not recorded",
     }
-    return spoken.get(candidate.grouping_basis.value, candidate.grouping_basis.value)
+    return spoken.get(basis, basis)
 
 
 #: Separators a site joins a person's name to the rest of a page title with.
@@ -313,7 +328,7 @@ def _serialise_candidate(
         "localities": sorted(k for k in candidate.locality_keys if k),
         "p": round(float(p), 4),
         "grouping_basis": candidate.grouping_basis.value,
-        "held_by": _plain_basis(candidate),
+        "held_by": _plain_basis(candidate, subject),
         "signals": {
             key: (None if value is None else round(float(value), 4))
             for key, value in p.components.items()
@@ -534,6 +549,16 @@ def build_report(
             for label, run in runs
         ],
         "anchor_available": formation.anchor_available,
+        # Which comparisons the caller made possible. A view that labels a
+        # candidate has to know this: on a photo-only search there is no name
+        # to compare, so calling the others "same name" describes something
+        # that never happened.
+        "compared": {
+            "name": bool(subject.name),
+            "context": bool(subject.context),
+            "locality": bool(subject.address),
+            "face": bool(subject.photo_url),
+        },
         "candidates": candidates,
         "rejected": rejected,
         "conflicts": _serialise_conflicts(ranked),

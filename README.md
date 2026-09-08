@@ -221,6 +221,17 @@ caller who typed "Webutation" and 0.17 for one who typed "Webutation, private
 investigator, insurance fraud, OSINT". The saturation value is set by precedent
 rather than measurement; see the note on `anchor_context_saturation`.
 
+**Describe a comparison it did not make.** A photo-only search supplies no
+name, so no name is ever compared — yet every candidate that was not the anchor
+was labelled "Other person, same name" and "Held by: a shared name only", while
+the rejection list beneath correctly reported all of them as decided on face
+similarity. The wording came from the grouping basis, which reads `name_only`
+because it describes how records were clustered against *each other* by their
+own name keys; rendered as a shared name it asserted a match to a name the
+caller never gave. The report now states which comparisons were possible at all
+(`compared`), and both the summary line and the cards read that same field
+rather than each deriving it separately, which is how they came to disagree.
+
 **Present a union as though it were a conjunction.** An anchor's basis line
 used to read "face match 0.99, name, context", which is the grammar of one
 record that matched on all three. No record had: the face came from a single

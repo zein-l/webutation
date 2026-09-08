@@ -81,6 +81,17 @@ function LongValue({ value }) {
  * prevent, and no caption undoes a photograph. Nothing verified means nothing
  * rendered, not an empty frame.
  */
+// What to call a candidate that is not the subject. It has to name the
+// comparison that actually ran: on a photo-only search no name was supplied,
+// so "same name" describes something that never happened — and contradicted
+// the rejection list, which correctly reported every one of them as decided on
+// face similarity.
+function otherLabel(compared) {
+  if (compared?.name) return "Other person, same name";
+  if (compared?.face) return "Other record, no face match";
+  return "Other record, not matched";
+}
+
 function VerifiedFaces({ images }) {
   if (!images?.length) return null;
 
@@ -117,7 +128,7 @@ function Freshness({ value }) {
   return <span>{Number(value).toFixed(2)}</span>;
 }
 
-export default function Candidate({ candidate }) {
+export default function Candidate({ candidate, compared }) {
   const {
     is_anchor: isAnchor,
     name,
@@ -143,7 +154,7 @@ export default function Candidate({ candidate }) {
       {isAnchor ? (
         <div className="cand__stamp">The person searched for</div>
       ) : (
-        <div className="cand__stamp muted">Other person, same name</div>
+        <div className="cand__stamp muted">{otherLabel(compared)}</div>
       )}
 
       <h3 className="cand__name">{displayName || name || "unnamed"}</h3>
