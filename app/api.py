@@ -17,6 +17,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+import os
 import time
 from collections.abc import AsyncIterator
 
@@ -250,6 +251,11 @@ def health() -> dict:
         # a run that vanishes looks the same whether the process crashed, was
         # redeployed, or was killed for memory, and only this tells them apart.
         "memory": memory_report(),
+        # Which commit is actually serving. Verifying a deploy by watching the
+        # process restart proves only that something restarted; after two
+        # rounds of "is the fix live yet?" this says so directly. Render sets
+        # RENDER_GIT_COMMIT; anywhere else it is null rather than guessed.
+        "commit": (os.environ.get("RENDER_GIT_COMMIT") or "")[:7] or None,
     }
 
 

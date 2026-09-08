@@ -402,5 +402,51 @@ person looked, not that every claim was accepted.
   failures are no longer cached, leaving Yandex enabled buys the refusal on
   every run. It has different recall from Lens and is worth having if someone
   works out why: `SerpApiConfig(disabled_engines=frozenset())` turns it back on.
+- **On the demo case, p rests almost entirely on one record.** The anchor
+  scores 0.8105, and the face term supplies 0.6316 of it: face similarity
+  carries weight 6.0 against name 2.0 and corroboration 1.5, so
+  `(6.0x1.00 + 2.0x0.85 + 1.5x0.00) / 9.5 = 0.8105`. All of that face evidence
+  comes from a single page, and it is the one page in the anchor whose identity
+  is unresolved. Remove it and p falls to `(2.0x0.85) / 3.5 = 0.4857` — below
+  the 0.65 threshold the same report applies to individual records.
+
+  This is reported rather than hidden, which is the point. The grouping panel
+  lists every anchor member with the signals that admitted it, the basis line
+  now says the evidence is spread across records rather than held by one, and
+  corroboration reads 0.00 because no two origins agree on anything but the
+  name — a zero that is actively pulling the score down rather than propping it
+  up. A reader can see what the number rests on and disagree with it. The
+  alternative, and the thing this system exists to refuse, is a confident
+  figure with the same evidence behind it.
+
+- **A weak face similarity counts as evidence against, and should not.** The
+  scoring module states the principle plainly: a signal that cannot be compared
+  is dropped from the mean rather than scored zero, "so absent evidence is not
+  treated as evidence against". A face that *was* compared and scored low is
+  admitted at full weight — and weight 6.0 is the heaviest thing in the model.
+
+  That is right for a portrait and wrong for whatever image happened to sit on
+  the page. In one live run three posts from a LinkedIn account the anchor
+  already trusted at strength 1.00 were rejected this way. The clearest is a
+  post whose text signals were identical to an admitted sibling — `name 0.85,
+  context 1.00` — dragged from 0.9143 to 0.573 by a 0.27 similarity against a
+  video thumbnail. The thumbnail is not a photograph of anybody in particular;
+  it was never evidence that the post belongs to someone else.
+
+  **Known defect, not fixed.** The honest repair is a scoring change, not a
+  threshold tweak: distinguish an image that purports to depict the subject
+  from an image that merely appears on the page, and let only the first argue
+  against identity. That is a redesign of how face evidence enters the mean,
+  and it is deliberately not being done as a patch.
+
+- **A name is read from the page title only.** If the title does not carry the
+  name, the name signal is 0.00 however plainly the rest of the record names
+  the person. A Facebook post whose URL slug reads `michael-petrie-co-ceo`
+  scored 0.00, because Google truncated its title to "Social Detection is
+  pleased to announce that Michael ...". Slugs, snippets and displayed links
+  routinely carry a name the title has lost. Reading them is not free — a slug
+  is unpunctuated and a snippet is prose, and this system does not parse prose
+  into claims — but the current rule discards evidence that is plainly there.
+
 - **`observed_at` is usually null** on web results, so most claims correctly
   report unknown freshness.
