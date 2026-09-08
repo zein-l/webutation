@@ -249,8 +249,8 @@ for one who typed "Webutation, private investigator, insurance fraud, OSINT".
 The saturation value is set by precedent rather than measurement; see the note
 on `anchor_context_saturation`.
 
-**Describe a comparison it did not make.**
-**A search with no name never says “same name”.**
+**Describe a comparison it did not make.** **A candidate that did not match the
+name is never labelled as sharing it, whatever the run supplied.**
 
 A photo-only search supplies no name, so no name is ever compared — yet every
 candidate that was not the anchor was labelled "Other person, same name" and
@@ -258,10 +258,16 @@ candidate that was not the anchor was labelled "Other person, same name" and
 reported all of them as decided on face similarity. The wording came from the
 grouping basis, which reads `name_only` because it describes how records were
 clustered against *each other* by their own name keys; rendered as a shared
-name it asserted a match to a name the caller never gave. The report now states
-which comparisons were possible at all (`compared`), and both the summary line
-and the cards read that same field rather than each deriving it separately,
-which is how they came to disagree.
+name it asserted a match to a name the caller never gave. The report states
+which comparisons were possible at all (`compared`), and the summary line reads
+it. That was not enough for the cards. A run-level flag says a name was
+supplied, not that it matched this candidate, and on a mixed search most
+candidates come from reverse image search and score 0.00 against the name: 79
+of 116 in one live run, "Prof Mark Walterfang", "Meet the PPG Team" and "My
+Bio" among them, each labelled as sharing a name it did not share. Each
+candidate now carries a `stamp` decided by its own name score, on the server,
+because that is the only place that knows what was compared for it. Two earlier
+versions derived the label in the view and both were wrong.
 
 **Present a union as though it were a conjunction.**
 **“Face, name and context” must not mean three records each matching one thing.**
