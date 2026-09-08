@@ -8,6 +8,25 @@ supports: not merging two people because they share a name, not counting five
 sites that copied one aggregator as five confirmations, and not presenting a
 number as a fact when it is an uncalibrated guess.
 
+## What is in here
+
+| | |
+|---|---|
+| [If you have ten minutes](#if-you-have-ten-minutes) | where to look first, and why |
+| [Running it](#running-it) | local setup, one subject end to end |
+| [Photo retention: 24 hours, by choice](#photo-retention-24-hours-by-choice) | what happens to an uploaded photograph |
+| [Deploying it](#deploying-it) | Render blueprint, the guarded run endpoint, what the deployment does not keep |
+| [What the numbers mean](#what-the-numbers-mean) | p, q and r, and why none of them reaches 1.00 |
+| [Things the system refuses to do](#things-the-system-refuses-to-do) | **the design.** Sixteen refusals, each a failure this hit and closed |
+| [Two axes that are easy to conflate](#two-axes-that-are-easy-to-conflate) | lineage against reliability, and why they stay apart |
+| [Evidence preservation, precisely](#evidence-preservation-precisely) | integrity hashes, and what they do not establish |
+| [Stated non-goals](#stated-non-goals) | scope cut deliberately, with the reasoning |
+| [Known limits](#known-limits) | what it still gets wrong, including what has no fix |
+
+The refusals section is the long one, and deliberately so: each entry is a
+failure this system hit, with the arithmetic that closed it. It can be skimmed
+from the bold lines alone.
+
 ## If you have ten minutes
 
 1. **What it refuses to do** is the design. Skip to *Things the system refuses
@@ -201,123 +220,167 @@ The face-match threshold (cosine similarity 0.45) is a conventional value for
 
 ## Things the system refuses to do
 
-**Count publishers as confirmations.** Corroboration counts distinct
-`origin_key` values, never publishers and never rows. Five sites republishing
-one aggregator is one origin. A suspected copy earns no independence bonus and
-unknown lineage is never counted as independent. Reports render
-`5 publishers, 2 unattributed, 1 distinct origin`, never `5 confirmations`.
+**Count publishers as confirmations.**
+**One aggregator copied by five sites is one origin, not five.**
 
-**Merge on a shared name.** Blocking proposes; only evidence disposes. Records
-sharing only a name-derived key stay separate candidates, and a candidate held
-together by a name alone is multiplied down to 0.40 of its other signals. Two
-people called Michael Petrie in different cities stay two people.
+Corroboration counts distinct `origin_key` values, never publishers and never
+rows. Five sites republishing one aggregator is one origin. A suspected copy
+earns no independence bonus and unknown lineage is never counted as
+independent. Reports render `5 publishers, 2 unattributed, 1 distinct origin`,
+never `5 confirmations`.
 
-**Score context as a share of what was asked.** Context counts matching terms
-toward a saturation point instead of dividing by however many terms the caller
-typed. A share is unreachable — a search snippet cannot hold six context terms,
-and the highest value ever observed was 0.50 against a 0.65 threshold — and it
-punished precision: the same record, on identical evidence, scored 1.00 for a
-caller who typed "Webutation" and 0.17 for one who typed "Webutation, private
-investigator, insurance fraud, OSINT". The saturation value is set by precedent
-rather than measurement; see the note on `anchor_context_saturation`.
+**Merge on a shared name.**
+**A name-derived key proposes a grouping and never settles one; a candidate held together by one is cut to 0.40 of its other signals.**
 
-**Describe a comparison it did not make.** A photo-only search supplies no
-name, so no name is ever compared — yet every candidate that was not the anchor
-was labelled "Other person, same name" and "Held by: a shared name only", while
-the rejection list beneath correctly reported all of them as decided on face
-similarity. The wording came from the grouping basis, which reads `name_only`
-because it describes how records were clustered against *each other* by their
-own name keys; rendered as a shared name it asserted a match to a name the
-caller never gave. The report now states which comparisons were possible at all
-(`compared`), and both the summary line and the cards read that same field
-rather than each deriving it separately, which is how they came to disagree.
+Blocking proposes; only evidence disposes. Records sharing only a name-derived
+key stay separate candidates, and a candidate held together by a name alone is
+multiplied down to 0.40 of its other signals. Two people called Michael Petrie
+in different cities stay two people.
 
-**Present a union as though it were a conjunction.** An anchor's basis line
-used to read "face match 0.99, name, context", which is the grammar of one
-record that matched on all three. No record had: the face came from a single
-page with no context agreement at all, and every record that agreed on context
-had no face to compare. It now says whether the evidence sits in one record or
-is spread, and across how many — "spread across 13 records, no one record has
-all of it" is a different claim from the one a reader was making before.
+**Score context as a share of what was asked.**
+**Describing the subject more precisely must not lower his score.**
 
-**Trust a link it has not cleaned.** Search responses arrive with escapes
-intact (`?id=11376`, which no browser will follow) and with Google
-redirect stubs (`/goto?url=CAES…`) that name a click rather than a page. The
-stubs are worse than cosmetic: record identity keys on the link, so every
-wrapped copy of a page escaped deduplication and was scored again — in one run
-the same page appeared in an anchor at two different strengths, because Google
-returns a different snippet per result row. Escapes are decoded; stubs are
-dropped, because a record whose destination cannot be resolved cannot be
-checked by a reader.
+Context counts matching terms toward a saturation point instead of dividing by
+however many terms the caller typed. A share is unreachable — a search snippet
+cannot hold six context terms, and the highest value ever observed was 0.50
+against a 0.65 threshold — and it punished precision: the same record, on
+identical evidence, scored 1.00 for a caller who typed "Webutation" and 0.17
+for one who typed "Webutation, private investigator, insurance fraud, OSINT".
+The saturation value is set by precedent rather than measurement; see the note
+on `anchor_context_saturation`.
 
-**Count a URL as a publisher.** `publisher` took whatever the source field
-held, which on some result types is a full URL. Each distinct URL then counted
-as a distinct publisher, and the corroboration summary reported the inflated
-total. A URL is reduced to its registrable domain; a real name is kept, because
-"Claims and Litigation Management Alliance" tells a reviewer more than
-theclm.org does.
+**Describe a comparison it did not make.**
+**A search with no name never says “same name”.**
 
-**Anchor on a trade.** Context alone never admits a record. A name is a label
-many people share and cannot admit on its own; a profession is a label far more
-people share. A subject who supplies only context therefore gets no anchor at
-all — "private investigator" identifies a job, not a person — and a photo-only
-subject is anchored by the face, which is evidence about a human being rather
-than about a category.
+A photo-only search supplies no name, so no name is ever compared — yet every
+candidate that was not the anchor was labelled "Other person, same name" and
+"Held by: a shared name only", while the rejection list beneath correctly
+reported all of them as decided on face similarity. The wording came from the
+grouping basis, which reads `name_only` because it describes how records were
+clustered against *each other* by their own name keys; rendered as a shared
+name it asserted a match to a name the caller never gave. The report now states
+which comparisons were possible at all (`compared`), and both the summary line
+and the cards read that same field rather than each deriving it separately,
+which is how they came to disagree.
 
-**Anchor on a shared name.** The same rule, in the one place that used to be
-exempt. A record joins the anchor only if it carries the subject's name *and* a
-signal that is not the name: an overlapping context term, an agreeing locality,
-or a face match. A locality has to name a settlement to count — a shared state
-scores 0.25 and cannot admit anything, because "Austin, TX" and "Houston, TX"
-are not the same place and millions of people share a state. A locality that
-disagrees refuses the record outright rather than being averaged away. The anchor
-strength is a mean over the signals that could be computed, so a record whose
-only comparable signal is its name scores exactly its name similarity — an exact
-match on a common name reads 1.00 and settles nothing. Admitting on that put a
-baseball roster, a real estate agent, an obituary, a professor and an
-insider-trading filing inside one candidate as one man. A link used to satisfy
-the check and no longer does: a page existing says nothing about which human it
-describes. The consequence is deliberate — a search on a name alone, with no
-address, context or photo, produces no anchor at all, because there is nothing
-to verify it against.
+**Present a union as though it were a conjunction.**
+**“Face, name and context” must not mean three records each matching one thing.**
 
-**Print a perfect score.** p and q are both capped at 0.95. Every input to
-either is an uncalibrated heuristic — reliability is a table of guesses about
-publishers, freshness is a decay curve nobody fitted, corroboration counts
-websites — so 1.00 asserts a certainty none of them support and contradicts the
-"not a probability" disclaimer printed beside it. The caps are separate settings
-from `score_ceiling`, which is what a fully present signal is worth; one field
-for all of them would make any of them impossible to change alone.
+An anchor's basis line used to read "face match 0.99, name, context", which is
+the grammar of one record that matched on all three. No record had: the face
+came from a single page with no context agreement at all, and every record that
+agreed on context had no face to compare. It now says whether the evidence sits
+in one record or is spread, and across how many — "spread across 13 records, no
+one record has all of it" is a different claim from the one a reader was making
+before.
 
-**Mistake a crowd for a consensus.** Corroboration counts distinct origins that
-*agree*, not origins present. It used to count presence, which meant a pile of
-same-name strangers grew more convincing with every stranger added — the
-inversion this system exists to prevent, arriving through the signal meant to
-guard against it. Agreeing on the name or the locality does not count: those are
-what put the records in one pile, so they cannot also confirm it.
+**Trust a link it has not cleaned.**
+**A link nobody can follow is not a link, and a redirect stub is not an identity.**
 
-**Hide the wrong answers.** Records that fail the subject anchor are kept,
-clustered separately, and reported with the score they missed by. Showing which
-same-name people were rejected, and why, is the point.
+Search responses arrive with escapes intact (`?id=11376`, which no browser will
+follow) and with Google redirect stubs (`/goto?url=CAES…`) that name a click
+rather than a page. The stubs are worse than cosmetic: record identity keys on
+the link, so every wrapped copy of a page escaped deduplication and was scored
+again — in one run the same page appeared in an anchor at two different
+strengths, because Google returns a different snippet per result row. Escapes
+are decoded; stubs are dropped, because a record whose destination cannot be
+resolved cannot be checked by a reader.
 
-**Parse prose into facts.** A search snippet reads like structured data and is
-not. Only the displayed name, the page URL and image URLs become assertions.
-Snippets are kept as context against the record. An employer parsed out of a
-sentence would be scored and corroborated as though a source had asserted it.
+**Count a URL as a publisher.**
+**Two pages on one site are one publisher.**
 
-**Resolve conflicts.** Conflicting assertions are stored, never overwritten.
-Different addresses over different periods are a move, not a conflict. Two
-employers are compatible. A conflict may also mean the *grouping* was wrong
-rather than the fact, which is why `possible_bad_merge` and
-`possible_bad_anchor` are distinct reasons.
+`publisher` took whatever the source field held, which on some result types is
+a full URL. Each distinct URL then counted as a distinct publisher, and the
+corroboration summary reported the inflated total. A URL is reduced to its
+registrable domain; a real name is kept, because "Claims and Litigation
+Management Alliance" tells a reviewer more than theclm.org does.
 
-**Confuse empty with failed.** A source that returned nothing answered the
-question. A source that errored did not. They never collapse into one outcome.
+**Anchor on a trade.**
+**A profession identifies a job, not a person.**
 
-**Derive freshness from collection time.** Recency uses `observed_at`. When a
-source did not say when it observed something, freshness is *unknown* — never
-inferred from `fetched_at`. A mirror fetched today must not refresh a five-year
-old claim.
+Context alone never admits a record. A name is a label many people share and
+cannot admit on its own; a profession is a label far more people share. A
+subject who supplies only context therefore gets no anchor at all — "private
+investigator" identifies a job, not a person — and a photo-only subject is
+anchored by the face, which is evidence about a human being rather than about a
+category.
+
+**Anchor on a shared name.**
+**The subject’s name plus one independent signal, or no anchor at all.**
+
+The same rule, in the one place that used to be exempt. A record joins the
+anchor only if it carries the subject's name *and* a signal that is not the
+name: an overlapping context term, an agreeing locality, or a face match. A
+locality has to name a settlement to count — a shared state scores 0.25 and
+cannot admit anything, because "Austin, TX" and "Houston, TX" are not the same
+place and millions of people share a state. A locality that disagrees refuses
+the record outright rather than being averaged away. The anchor strength is a
+mean over the signals that could be computed, so a record whose only comparable
+signal is its name scores exactly its name similarity — an exact match on a
+common name reads 1.00 and settles nothing. Admitting on that put a baseball
+roster, a real estate agent, an obituary, a professor and an insider-trading
+filing inside one candidate as one man. A link used to satisfy the check and no
+longer does: a page existing says nothing about which human it describes. The
+consequence is deliberate — a search on a name alone, with no address, context
+or photo, produces no anchor at all, because there is nothing to verify it
+against.
+
+**Print a perfect score.**
+**p and q stop at 0.95, because every input to them is a guess.**
+
+p and q are both capped at 0.95. Every input to either is an uncalibrated
+heuristic — reliability is a table of guesses about publishers, freshness is a
+decay curve nobody fitted, corroboration counts websites — so 1.00 asserts a
+certainty none of them support and contradicts the "not a probability"
+disclaimer printed beside it. The caps are separate settings from
+`score_ceiling`, which is what a fully present signal is worth; one field for
+all of them would make any of them impossible to change alone.
+
+**Mistake a crowd for a consensus.**
+**Corroboration counts origins that agree, not origins present.**
+
+Corroboration counts distinct origins that *agree*, not origins present. It
+used to count presence, which meant a pile of same-name strangers grew more
+convincing with every stranger added — the inversion this system exists to
+prevent, arriving through the signal meant to guard against it. Agreeing on the
+name or the locality does not count: those are what put the records in one
+pile, so they cannot also confirm it.
+
+**Hide the wrong answers.**
+**Every rejected record is kept, scored, and shown with the reason it missed.**
+
+Records that fail the subject anchor are kept, clustered separately, and
+reported with the score they missed by. Showing which same-name people were
+rejected, and why, is the point.
+
+**Parse prose into facts.**
+**A snippet is context against a record, never a claim by it.**
+
+A search snippet reads like structured data and is not. Only the displayed
+name, the page URL and image URLs become assertions. Snippets are kept as
+context against the record. An employer parsed out of a sentence would be
+scored and corroborated as though a source had asserted it.
+
+**Resolve conflicts.**
+**Both claims are kept, and a conflict may mean the grouping was wrong rather than the fact.**
+
+Conflicting assertions are stored, never overwritten. Different addresses over
+different periods are a move, not a conflict. Two employers are compatible. A
+conflict may also mean the *grouping* was wrong rather than the fact, which is
+why `possible_bad_merge` and `possible_bad_anchor` are distinct reasons.
+
+**Confuse empty with failed.**
+**A source that found nothing answered the question; a source that errored did not.**
+
+A source that returned nothing answered the question. A source that errored did
+not. They never collapse into one outcome.
+
+**Derive freshness from collection time.**
+**Fetching is not observing, and “unknown” is a real answer.**
+
+Recency uses `observed_at`. When a source did not say when it observed
+something, freshness is *unknown* — never inferred from `fetched_at`. A mirror
+fetched today must not refresh a five-year old claim.
 
 ## Two axes that are easy to conflate
 
