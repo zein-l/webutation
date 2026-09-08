@@ -67,16 +67,17 @@ export default function App() {
 
   // Name what actually separated them. With no name supplied there was no name
   // comparison, and claiming one would describe a check that never ran.
-  // Reads the same report.compared the cards do. These two used to derive the
-  // wording separately and drifted: the summary said "records whose faces did
-  // not match" while every card beneath it said "Other person, same name".
-  const separatedBy = (n) => {
-    const compared = run?.report?.compared;
-    if (compared?.name) return `${n} other ${n === 1 ? "person" : "people"} sharing this name`;
-    if (compared?.face)
-      return `${n} ${n === 1 ? "record whose face did not match" : "records whose faces did not match"}`;
-    return `${n} other ${n === 1 ? "record" : "records"} that did not match`;
-  };
+  // Counted on the server from the stamps it already decided, so the heading
+  // and the cards beneath it cannot disagree. Deriving it here is what went
+  // wrong twice: first it read a run-level flag and announced "116 other
+  // people sharing this name" when only 37 shared it, and before that it
+  // disagreed with the cards outright.
+  //
+  // The fallback claims nothing about what was compared, for reports built
+  // before the server sent the summary.
+  const separatedBy = (n) =>
+    run?.report?.other_candidates?.label ||
+    `${n} other ${n === 1 ? "candidate" : "candidates"}`;
 
   return (
     <div className="sheet">

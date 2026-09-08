@@ -214,3 +214,67 @@ def test_every_candidate_carries_a_stamp() -> None:
     for report in (photo_only_report(), mixed_report()):
         for candidate in report["candidates"]:
             assert candidate.get("stamp"), candidate["display_name"]
+
+
+# --- and the section heading above them ---------------------------------
+
+
+def test_the_section_heading_does_not_claim_a_shared_name_for_all() -> None:
+    """"116 other people sharing this name" when 37 shared it.
+
+    The same defect as the cards, one level up: a run-level flag said a name
+    was supplied and the heading described every candidate beneath it that way.
+    """
+    report = mixed_report()
+    others = report["other_candidates"]
+
+    assert others["total"] == others["same_name"] + others["no_face_match"] + others["unmatched"]
+    if others["same_name"] < others["total"]:
+        assert "sharing this name" not in others["label"] or "—" in others["label"], (
+            f"heading claims a shared name for all of them: {others['label']!r}"
+        )
+
+
+def test_the_heading_counts_agree_with_the_cards() -> None:
+    """Counted from the stamps, so the two cannot drift apart."""
+    for report in (photo_only_report(), mixed_report()):
+        others = report["other_candidates"]
+        cards = [c for c in report["candidates"] if str(c["is_anchor"]).lower() != "true"]
+        assert others["total"] == len(cards)
+        assert others["same_name"] == sum(
+            1 for c in cards if c["stamp"] == "Other person, same name"
+        )
+        assert others["unmatched"] == sum(
+            1 for c in cards if c["stamp"] == "Other record, not matched"
+        )
+
+
+def test_a_photo_only_heading_never_mentions_a_name() -> None:
+    """The blunt scan already covers this, stated once more where it is decided."""
+    label = photo_only_report()["other_candidates"]["label"]
+    for phrase in ("sharing this name", "same name", "shared name"):
+        assert phrase not in label, label
+
+
+def test_a_heading_for_one_population_says_it_plainly() -> None:
+    """A split is only worth showing when there is a split."""
+    from app.report import _others_summary
+
+    all_named = [{"is_anchor": False, "stamp": "Other person, same name"}] * 4
+    assert _others_summary(all_named)["label"] == "4 other people sharing this name"
+
+    one = [{"is_anchor": False, "stamp": "Other person, same name"}]
+    assert _others_summary(one)["label"] == "1 other person sharing this name"
+
+
+def test_a_mixed_heading_shows_the_split() -> None:
+    from app.report import _others_summary
+
+    mixed = (
+        [{"is_anchor": False, "stamp": "Other person, same name"}] * 37
+        + [{"is_anchor": False, "stamp": "Other record, not matched"}] * 79
+    )
+    label = _others_summary(mixed)["label"]
+    assert label.startswith("116 other candidates")
+    assert "37 sharing this name" in label
+    assert "79 that matched on nothing" in label

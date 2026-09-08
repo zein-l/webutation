@@ -249,8 +249,8 @@ for one who typed "Webutation, private investigator, insurance fraud, OSINT".
 The saturation value is set by precedent rather than measurement; see the note
 on `anchor_context_saturation`.
 
-**Describe a comparison it did not make.** **A candidate that did not match the
-name is never labelled as sharing it, whatever the run supplied.**
+**Describe a comparison it did not make.**
+**A candidate that did not match the name is never labelled as sharing it, and neither is the heading above it.**
 
 A photo-only search supplies no name, so no name is ever compared — yet every
 candidate that was not the anchor was labelled "Other person, same name" and
@@ -267,7 +267,10 @@ of 116 in one live run, "Prof Mark Walterfang", "Meet the PPG Team" and "My
 Bio" among them, each labelled as sharing a name it did not share. Each
 candidate now carries a `stamp` decided by its own name score, on the server,
 because that is the only place that knows what was compared for it. Two earlier
-versions derived the label in the view and both were wrong.
+versions derived the label in the view and both were wrong. The panel heading
+above the cards had the same fault and the same cause: it read "116 other
+people sharing this name" while 37 shared it. It is counted from the stamps
+now, so a heading cannot describe its own contents wrongly.
 
 **Present a union as though it were a conjunction.**
 **“Face, name and context” must not mean three records each matching one thing.**

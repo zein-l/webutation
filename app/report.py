@@ -122,6 +122,63 @@ def _freshness(item) -> str | float:
     return round(float(item.components["freshness"]), 4)
 
 
+def _others_summary(candidates: list[dict]) -> dict[str, Any]:
+    """What to call the collapsed panel of candidates that are not the anchor.
+
+    It read "116 other people sharing this name" while only 37 of them shared
+    it; the other 79 scored 0.00 against the name and were rejected on
+    something else. The same defect as the per-candidate labels, one level up
+    and from the same cause: a run-level flag says a name was supplied, and the
+    heading took that as licence to describe every candidate beneath it.
+
+    Counted from the stamps the server has already decided, so the heading and
+    the cards cannot disagree — deriving them separately is what let them drift
+    the first time.
+    """
+    others = [c for c in candidates if not c["is_anchor"]]
+    counts: dict[str, int] = {}
+    for candidate in others:
+        counts[candidate["stamp"]] = counts.get(candidate["stamp"], 0) + 1
+
+    total = len(others)
+    same_name = counts.get("Other person, same name", 0)
+    no_face = counts.get("Other record, no face match", 0)
+    unmatched = counts.get("Other record, not matched", 0)
+
+    def plural(n: int, one: str, many: str) -> str:
+        return f"{n} {one if n == 1 else many}"
+
+    # One population: name it, rather than counting it out into parts of one.
+    if same_name == total and total:
+        label = plural(total, "other person sharing this name",
+                       "other people sharing this name")
+    elif no_face == total and total:
+        label = plural(total, "record whose face did not match",
+                       "records whose faces did not match")
+    elif unmatched == total and total:
+        label = plural(total, "other record that did not match",
+                       "other records that did not match")
+    else:
+        parts = []
+        if same_name:
+            parts.append(f"{same_name} sharing this name")
+        if no_face:
+            parts.append(f"{no_face} whose face did not match")
+        if unmatched:
+            parts.append(f"{unmatched} that matched on nothing")
+        label = plural(total, "other candidate", "other candidates")
+        if parts:
+            label += " — " + ", ".join(parts)
+
+    return {
+        "total": total,
+        "same_name": same_name,
+        "no_face_match": no_face,
+        "unmatched": unmatched,
+        "label": label,
+    }
+
+
 def _candidate_stamp(candidate: CandidateDraft, components: dict) -> str:
     """What to call this candidate, from what was compared for this candidate.
 
@@ -642,6 +699,9 @@ def build_report(
             for label, run in runs
         ],
         "anchor_available": formation.anchor_available,
+        # The collapsed panel's heading, counted from the stamps rather than
+        # derived a second time. See _others_summary.
+        "other_candidates": _others_summary(candidates),
         # Which comparisons the caller made possible. A view that labels a
         # candidate has to know this: on a photo-only search there is no name
         # to compare, so calling the others "same name" describes something
